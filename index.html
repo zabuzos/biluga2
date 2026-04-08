@@ -3,145 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beluga 3: Mobile Optimized</title>
+    <title>Beluga 3: Family Edition</title>
 
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         
-        #tabs { display: flex; gap: 10px; margin: 10px 0; z-index: 10; }
-        .tab-btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; }
-        .tab-btn.active { background: #2196F3; color: white; }
+        #tabs { display: flex; gap: 10px; margin: 20px 0; z-index: 10; }
+        .tab-btn { padding: 12px 25px; cursor: pointer; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; transition: 0.3s; }
+        .tab-btn.active { background: #2196F3; color: white; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3); }
 
-        .view { display: none; width: 100%; max-width: 1600px; }
+        .view { display: none; width: 98%; max-width: 1600px; animation: fadeIn 0.3s; }
         .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* ОСНОВНЕ ПАКУВАННЯ */
-        .game-layout { 
-            display: flex; 
-            flex-direction: row; 
-            justify-content: center; 
-            gap: 15px; 
-            width: 100%; 
-        }
+        .game-layout { display: flex; justify-content: center; align-items: flex-start; gap: 15px; width: 100%; }
 
-        /* МОБІЛЬНІ СТИЛІ (Магазини зверху і знизу) */
-        @media (max-width: 900px) {
-            .game-layout { flex-direction: column; align-items: center; }
-            .panel { 
-                width: 100% !important; 
-                display: flex !important; 
-                overflow-x: auto; 
-                gap: 10px; 
-                padding: 5px;
-                box-sizing: border-box;
-            }
-            .shopCard { 
-                min-width: calc(33.33% - 10px); /* 3 в ряд */
-                margin-bottom: 0 !important; 
-                flex-shrink: 0;
-            }
-            .shopImg { height: 50px !important; }
-            #leftPanel { order: 1; }
-            .center-area { order: 2; width: 100%; }
-            #rightPanel { order: 3; }
-        }
-
-        /* ПОЛЕ ГРИ */
-        #gridWrapper { 
-            overflow-x: auto; /* Горизонтальна прокрутка */
-            width: 100%; 
-            background: #fff; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        #grid { 
-            display: grid; 
-            grid-template-columns: repeat(18, 40px); /* Клітинки 40px */
-            background: #ccc; 
-            width: fit-content; /* Щоб не розтягувалось більше ніж треба */
-        }
+        #gridWrapper { overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 4px solid #fff; }
+        #grid { display: grid; grid-template-columns: repeat(18, 55px); background: #ccc; }
         
         .cell { 
-            width: 40px; height: 40px; 
-            border: 1px solid rgba(0,0,0,0.05); 
-            position: relative; 
-            background-image: url('img/ground.png'); 
-            background-size: cover; 
-            cursor: pointer; 
+            width: 55px; height: 55px; border: 1px solid rgba(0,0,0,0.05); position: relative; 
+            background-image: url('img/ground.png'); background-size: cover; cursor: pointer; 
+        }
+
+        .divider { position: relative; }
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 0; right: -2px; bottom: 0;
+            width: 4px;
+            border-right: 3px dashed rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            pointer-events: none;
         }
 
         .unitImg { width: 100%; height: 100%; object-fit: contain; z-index: 2; position: relative; pointer-events: none; }
-        .unitP1 { filter: drop-shadow(0 0 3px #2196F3); }
-        .unitP2 { filter: drop-shadow(0 0 3px #f44336); }
-        
-        .hp { position: absolute; bottom: 1px; right: 1px; font-size: 9px; color: white; background: rgba(0,0,0,0.7); padding: 0 2px; border-radius: 2px; z-index: 3; }
-        .mp { position: absolute; top: 1px; left: 1px; font-size: 9px; background: #FFD700; color: #000; padding: 0 2px; border-radius: 2px; font-weight: bold; z-index: 3; }
-
-        .divider::after { content: ''; position: absolute; top: 0; right: -2px; bottom: 0; width: 4px; border-right: 2px dashed rgba(0,0,0,0.5); z-index: 10; pointer-events: none; }
-
-        /* ПАНЕЛІ */
-        .panel { width: 200px; flex-shrink: 0; }
-        .card { background: white; padding: 10px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .shopCard { text-align: center; }
-        .shopImg { width: 100%; height: 70px; object-fit: contain; }
-        .buyBtn { width: 100%; padding: 8px; border: none; border-radius: 6px; background: #4CAF50; color: white; font-weight: bold; font-size: 0.8em; }
+        .unitP1 { filter: drop-shadow(0 0 4px #2196F3); }
+        .unitP2 { filter: drop-shadow(0 0 4px #f44336); }
+        .hp { position: absolute; bottom: 2px; right: 2px; font-size: 11px; color: white; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 3px; z-index: 3; }
+        .mp { position: absolute; top: 2px; left: 2px; font-size: 11px; background: #FFD700; color: #000; padding: 1px 4px; border-radius: 3px; font-weight: bold; z-index: 3; }
         
         .move { background: rgba(76, 175, 80, 0.4); }
-        .selected { outline: 2px solid #000; z-index: 5; }
-        .attackBorder { outline: 2px solid #f44336; }
+        .selected { outline: 3px solid #000; z-index: 5; }
+        .attackBorder { outline: 3px solid #f44336; animation: blink 1s infinite; }
+        .attackBorder:hover::after { content: '⚔️'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 30px; z-index: 10; pointer-events: none; }
 
-        #menu { text-align: center; background: white; padding: 10px; border-radius: 10px; width: 95%; margin-bottom: 10px; }
-        input, select { padding: 8px; margin: 2px; border: 1px solid #ddd; border-radius: 6px; }
+        @keyframes hitEffect { 0% { transform: scale(1); filter: brightness(3); } 50% { transform: scale(1.3); filter: hue-rotate(90deg); } 100% { transform: scale(1); filter: brightness(1); } }
+        .hit { animation: hitEffect 0.5s ease-out; z-index: 20; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .panel { width: 220px; flex-shrink: 0; }
+        .card { background: white; padding: 12px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .shopCard { text-align: center; transition: transform 0.2s; }
+        .shopCard:hover { transform: translateY(-3px); }
+        .shopImg { width: 100%; height: 80px; object-fit: contain; margin: 8px 0; }
+        .buyBtn { width: 100%; padding: 10px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; }
+        .buyBtn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .race-editor { background: white; padding: 25px; border-radius: 15px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .unit-form { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: #fafafa; }
+        .delete-btn { background: #ff5252; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 6px; }
+
+        #menu { text-align: center; background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
     </style>
 </head>
 <body>
 
 <div id="tabs">
     <button class="tab-btn active" onclick="switchTab('game')">🎮 Гра</button>
-    <button class="tab-btn" onclick="switchTab('editor')">🛠️ Редактор</button>
+    <button class="tab-btn" onclick="switchTab('editor')">🛠️ Редактор Рас</button>
 </div>
 
 <div id="gameView" class="view active">
     <div id="menu">
-        <input type="text" id="roomInput" placeholder="Кімната" style="width: 80px;"/>
-        <select id="playerSelect"><option value="1">P1</option><option value="2">P2</option></select>
+        <input type="text" id="roomInput" placeholder="Назва кімнати" />
+        <select id="playerSelect"><option value="1">Гравець 1 (Синій)</option><option value="2">Гравець 2 (Червоний)</option></select>
         <select id="raceSelect"></select>
-        <button id="joinBtn" style="padding: 8px; background: #2196F3; color: white; border: none; border-radius: 5px;">Вхід</button>
+        <button id="joinBtn" style="padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Увійти</button>
     </div>
 
     <div class="game-layout">
         <div class="panel" id="leftPanel"></div>
-        
-        <div class="center-area">
-            <div id="turnPanel" class="card" style="text-align: center; margin-bottom: 10px;">
-                <h4 style="margin: 0;">Хід <span id="turn">1</span> (P<span id="player">1</span>)</h4>
-                <div style="font-size: 0.9em;">
-                    <span style="color: #2196F3;">P1: <b id="money1">0</b></span> | 
-                    <span style="color: #f44336;">P2: <b id="money2">0</b></span>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <div id="turnPanel" class="card" style="text-align: center; width: 100%; max-width: 400px;">
+                <h3 style="margin: 0 0 10px 0;">Хід: <span id="turn">1</span> | Гравець: <span id="player">1</span></h3>
+                <div style="display: flex; justify-content: space-around; font-size: 1.1em;">
+                    <span style="color: #2196F3;">💰 P1: <b id="money1">0</b></span>
+                    <span style="color: #f44336;">💰 P2: <b id="money2">0</b></span>
                 </div>
             </div>
-
-            <div id="gridWrapper">
-                <div id="grid"></div>
-            </div>
-
-            <div style="margin: 10px 0; display: flex; gap: 5px; justify-content: center;">
-                <button onclick="endTurn()" class="buyBtn" id="endTurnBtn" style="width: 120px; background: #2196F3;">Кінець ходу</button>
-                <button onclick="resetState()" style="background: #777; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.8em;">Скинути</button>
+            <div id="gridWrapper"><div id="grid"></div></div>
+            <div style="margin-top: 15px; display: flex; gap: 10px; width: 100%; justify-content: center;">
+                <button onclick="endTurn()" class="buyBtn" id="endTurnBtn" style="width: 180px;">Завершити хід</button>
+                <button onclick="resetState()" style="background: #ef6c00; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">Нова гра</button>
             </div>
         </div>
-
         <div class="panel" id="rightPanel"></div>
     </div>
 </div>
 
 <div id="editorView" class="view">
-    <div id="racesList" style="padding: 10px;"></div>
+    <div class="race-editor">
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <strong>🔑 Ключ синхронізації:</strong>
+            <input type="text" id="syncKey" placeholder="Ваш ключ..." style="width: 200px;">
+            <button onclick="loadCloudRaces()" style="background: #2196F3; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">Завантажити</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Управління комплектами рас</h2>
+            <button onclick="addNewRace()" style="background: #4CAF50; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">+ Нова раса</button>
+        </div>
+        <div id="racesList"></div>
+    </div>
 </div>
 
 <script type="module">
-// [Тут залишається вся логіка Firebase, cellClick, render та інше з попереднього повідомлення]
-// Тільки переконайтеся, що розмір у функціях render збігається з 40px/18 стовпців.
+function generateRandomCities() {
+    let p1_x1 = Math.floor(Math.random() * 2); 
+    let p1_y1 = Math.floor(Math.random() * 4); 
+    let p1_x2 = Math.floor(Math.random() * 2);
+    let p1_y2 = 6 + Math.floor(Math.random() * 4); 
+
+    let p2_x1 = 16 + Math.floor(Math.random() * 2);
+    let p2_y1 = Math.floor(Math.random() * 4);
+    let p2_x2 = 16 + Math.floor(Math.random() * 2);
+    let p2_y2 = 6 + Math.floor(Math.random() * 4);
+
+    return [
+        {x: p1_x1, y: p1_y1}, {x: p1_x2, y: p1_y2}, 
+        {x: p2_x1, y: p2_y1}, {x: p2_x2, y: p2_y2}
+    ];
+}
+
+function generateLevelData() {
+    const cities = generateRandomCities();
+    const obstacles = [];
+    const waterChance = Math.random() * 0.15; 
+    const mountainChance = Math.random() * 0.10;
+
+    for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 18; x++) {
+            if (cities.some(c => c.x === x && c.y === y)) continue;
+            let rand = Math.random();
+            if (rand < waterChance) { 
+                obstacles.push({x, y, type: 'water'});
+            } else if (rand < waterChance + mountainChance) { 
+                obstacles.push({x, y, type: 'mountain'});
+            }
+        }
+    }
+    return { cities, obstacles };
+}
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
@@ -163,10 +176,83 @@ const defaultRace = {
     name: "Людство",
     units: [{id: 'd1', name:"Піхота", speed:3, atk:20, hp:50, range:1, price:40000, img:"https://cdn-icons-png.flaticon.com/512/1054/1054363.png"}]
 };
-let myRaces = [defaultRace];
 
-// Логіка генерації та гри ідентична попередній (скопіюйте функції cellClick, saveState, renderShop з попереднього коду)
-// ... (тут має бути ваш JS код) ...
+let myRaces = [defaultRace];
+let currentSyncKey = localStorage.getItem('familySyncKey') || "";
+if(currentSyncKey) document.getElementById('syncKey').value = currentSyncKey;
+
+window.loadCloudRaces = () => {
+    const key = document.getElementById('syncKey').value.trim();
+    if(!key) return alert("Введіть ключ!");
+    currentSyncKey = key;
+    localStorage.setItem('familySyncKey', key);
+    onValue(ref(db, 'cloud_races/' + key), (snap) => {
+        if(snap.exists()) myRaces = snap.val();
+        renderEditor(); updateRaceSelect();
+    });
+};
+
+function saveRacesToCloud() { if(currentSyncKey) set(ref(db, 'cloud_races/' + currentSyncKey), myRaces); }
+window.addNewRace = () => { 
+    let n = prompt("Назва нової раси:"); 
+    if(n) { 
+        if (!myRaces) myRaces = [];
+        myRaces.push({ name: n, units: [] }); 
+        saveRacesToCloud(); 
+    } 
+};
+window.deleteRace = (i) => { if(confirm("Видалити?")) { myRaces.splice(i, 1); saveRacesToCloud(); } };
+window.addUnitToRace = (rI) => { 
+    if (!myRaces[rI]) return;
+    if (!myRaces[rI].units) myRaces[rI].units = [];
+    myRaces[rI].units.push({ 
+        id: 'u' + Date.now(), name: "Новий воїн", speed: 2, atk: 10, hp: 40, range: 1, price: 30000, 
+        img: "https://cdn-icons-png.flaticon.com/512/2042/2042878.png" 
+    }); 
+    saveRacesToCloud(); 
+};
+window.updateUnit = (rI, uI, f, v) => { myRaces[rI].units[uI][f] = (f==='name'||f==='img') ? v : Number(v); saveRacesToCloud(); };
+window.deleteUnit = (rI, uI) => { myRaces[rI].units.splice(uI, 1); saveRacesToCloud(); };
+
+function renderEditor() {
+    const list = document.getElementById('racesList');
+    if(!list) return;
+    list.innerHTML = myRaces.map((race, rIdx) => `
+        <div class="card" style="border-top: 5px solid #2196F3; margin-bottom: 30px; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background: #f8f9fa; padding: 10px; border-radius: 8px 8px 0 0; margin: -12px -12px 15px -12px; border-bottom: 1px solid #eee;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2em;">📦</span>
+                    <input type="text" value="${race.name}" 
+                        style="font-weight: bold; font-size: 1.1em; border: 1px solid transparent; background: transparent; padding: 5px; width: 250px;"
+                        onchange="updateRaceName(${rIdx}, this.value)">
+                </div>
+                <button class="delete-btn" onclick="deleteRace(${rIdx})">Видалити расу</button>
+            </div>
+            ${(race.units || []).map((unit, uIdx) => `
+                <div class="unit-form">
+                    <div><small>Назва</small><br><input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
+                    <div><small>❤️ HP</small><br><input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
+                    <div><small>⚔️ Атака</small><br><input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
+                    <div><small>🏃 Шв</small><br><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
+                    <div><small>🎯 Дальн</small><br><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
+                    <div><small>💰 Ціна</small><br><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
+                    <div style="grid-column: span 2;"><small>🖼️ Картинка</small><br><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
+                    <div style="display: flex; align-items: flex-end;"><button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 38px;">🗑️</button></div>
+                </div>
+            `).join('')}
+            <div style="margin-top: 10px;"><button onclick="addUnitToRace(${rIdx})" style="background:#2196F3; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight: bold; width: 100%;">+ Додати юніта</button></div>
+        </div>
+    `).join('');
+}
+
+window.switchTab = (tab) => {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tab + 'View').classList.add('active');
+    if(tab === 'editor' && currentSyncKey) loadCloudRaces();
+};
+
+function updateRaceSelect() { document.getElementById('raceSelect').innerHTML = myRaces.map((r, i) => `<option value="${i}">${r.name}</option>`).join(''); }
 
 function createGrid() {
     let g = document.getElementById('grid'); g.innerHTML = '';
@@ -180,20 +266,201 @@ function createGrid() {
     }
 }
 
-// [Вставте сюди інші функції: cellClick, render, endTurn, saveState, join логіку]
-// Вони залишаються без змін, оскільки ми правили тільки стилі.
+function render() {
+    if(!state) return;
+    document.getElementById('turn').innerText = turn;
+    document.getElementById('player').innerText = currentPlayer;
+    document.getElementById('money1').innerText = (state.money[1]/1000) + 'к';
+    document.getElementById('money2').innerText = (state.money[2]/1000) + 'к';
+    document.getElementById('endTurnBtn').disabled = (currentPlayer !== playerId);
+    
+    document.querySelectorAll('.cell').forEach(c => { 
+        c.innerHTML = ''; 
+        c.classList.remove('move','selected','attackBorder');
+        c.style.backgroundColor = '';
+        c.style.backgroundImage = "url('img/ground.png')";
+    });
 
-window.switchTab = (tab) => {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tab + 'View').classList.add('active');
+    (state.obstacles || []).forEach(ob => {
+        let cell = document.querySelector(`.cell[data-x='${ob.x}'][data-y='${ob.y}']`);
+        if (!cell) return;
+        if (ob.type === 'water') {
+            cell.style.backgroundColor = '#128cc3';
+            cell.style.backgroundImage = 'none';
+        } else if (ob.type === 'mountain') {
+            cell.style.backgroundColor = 'rgba(121, 85, 72, 0.5)';
+            cell.style.backgroundImage = 'none';
+            cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1; opacity:0.6;">⛰️</span>';
+        }
+    });
+
+    (state.cities || []).forEach(c => {
+        let cell = document.querySelector(`.cell[data-x='${c.x}'][data-y='${c.y}']`);
+        if(cell) cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;">🏰</span>';
+    });
+
+    (state.units || []).forEach(u => {
+        let cell = document.querySelector(`.cell[data-x='${u.x}'][data-y='${u.y}']`);
+        if(!cell) return;
+        let img = document.createElement('img'); img.src = u.img; img.className = `unitImg ${u.owner === 1 ? 'unitP1' : 'unitP2'}`;
+        cell.appendChild(img);
+        let h = document.createElement('div'); h.className = 'hp'; h.innerText = u.hp; cell.appendChild(h);
+        let m = document.createElement('div'); m.className = 'mp'; m.innerText = u.movePoints; cell.appendChild(m);
+        if(selectedUnit && u.x === selectedUnit.x && u.y === selectedUnit.y) cell.classList.add('selected');
+    });
+    if(selectedUnit) { highlightMoves(selectedUnit); highlightAttacks(selectedUnit); }
+    renderShop();
+}
+
+function renderShop() {
+    const lP = document.getElementById('leftPanel'); const rP = document.getElementById('rightPanel');
+    const p1R = (state.playerRaces && state.playerRaces[1]) ? state.playerRaces[1] : defaultRace;
+    const p2R = (state.playerRaces && state.playerRaces[2]) ? state.playerRaces[2] : defaultRace;
+    let buildShop = (race, pNum) => {
+        let html = `<div style="text-align:center; padding:8px; background:${pNum===1?'#2196F3':'#f44336'}; color:white; border-radius:8px; margin-bottom:10px;"><b>${race.name}</b></div>`;
+        (race.units || []).forEach(u => {
+            html += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==pNum||playerId!==pNum?'disabled':''}>Купити</button></div>`;
+        });
+        return html;
+    };
+    lP.innerHTML = buildShop(p1R, 1); rP.innerHTML = buildShop(p2R, 2);
+}
+
+window.startBuy = (id) => { buyMode = id; };
+
+function cellClick(x, y) {
+    if(currentPlayer !== playerId) return;
+    if(!state.units) state.units = [];
+    
+    let unitAtCell = state.units.find(u => u.x === x && u.y === y);
+
+    if(buyMode) {
+        let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
+        let isCity = (state.cities || []).some(c => c.x === x && c.y === y);
+        if(unitAtCell || isObstacle || isCity || (playerId === 1 ? x > 8 : x < 9)) return;
+        
+        const myR = (state.playerRaces && state.playerRaces[playerId]) ? state.playerRaces[playerId] : defaultRace;
+        const uD = myR.units.find(u => u.id === buyMode);
+        if(uD && state.money[playerId] >= uD.price) {
+            state.money[playerId] -= uD.price;
+            state.units.push({ ...uD, x, y, owner: playerId, movePoints: 0, attacked: true });
+            buyMode = null; saveState(); render();
+        }
+        return;
+    }
+
+    if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
+    
+    // АТАКА
+    if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
+        if(Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y)) <= selectedUnit.range) {
+            // ФІКС: Обов'язково позначаємо як атакований
+            selectedUnit.attacked = true; 
+            document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
+            unitAtCell.hp -= selectedUnit.atk;
+            if(unitAtCell.hp <= 0) {
+                state.units = state.units.filter(u => u !== unitAtCell);
+            }
+            saveState(); // Зберігаємо негайно
+            setTimeout(() => render(), 500);
+            return;
+        }
+    }
+
+    // РУХ
+    if(selectedUnit && selectedUnit.movePoints > 0 && !unitAtCell) {
+        let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
+        if(isObstacle) return;
+        let d = Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y));
+        if(d <= selectedUnit.movePoints) { 
+            selectedUnit.x = x; selectedUnit.y = y; selectedUnit.movePoints -= d; 
+            saveState(); render();
+        }
+    }
+}
+
+function highlightMoves(u) {
+    if(!u || u.movePoints <= 0) return;
+    for(let x=0; x<18; x++) for(let y=0; y<10; y++) {
+        let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
+        if(!isObstacle && Math.max(Math.abs(u.x-x), Math.abs(u.y-y)) <= u.movePoints && !(state.units || []).some(un => un.x===x && un.y===y)) {
+            let c = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`); if(c) c.classList.add('move');
+        }
+    }
+}
+
+function highlightAttacks(u) {
+    if(!u || u.attacked) return;
+    (state.units || []).forEach(e => {
+        if(e.owner !== u.owner && Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y)) <= u.range) {
+            let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`); if(c) c.classList.add('attackBorder');
+        }
+    });
+}
+
+window.updateRaceName = (rI, newName) => {
+    if (!myRaces[rI]) return;
+    myRaces[rI].name = newName;
+    saveRacesToCloud();
 };
 
-createGrid();
-updateRaceSelect();
-function updateRaceSelect() { document.getElementById('raceSelect').innerHTML = myRaces.map((r, i) => `<option value="${i}">${r.name}</option>`).join(''); }
+window.endTurn = () => {
+    state.money[currentPlayer] += 100000;
+    currentPlayer = (currentPlayer === 1) ? 2 : 1; 
+    if (currentPlayer === 1) turn++;
+    (state.units || []).forEach(u => { 
+        if (u.owner === currentPlayer) { 
+            u.movePoints = u.speed; 
+            u.attacked = false; 
+        }
+    });
+    selectedUnit = null; 
+    saveState();
+};
 
-// Додайте ваші існуючі функції обробки подій сюди...
+window.saveState = () => { if(room) set(ref(db, 'games/'+room), {state, turn, currentPlayer}); };
+window.resetState = () => {
+    const level = generateLevelData();
+    state.units = [];
+    state.money = {1: 500000, 2: 500000};
+    state.cities = level.cities;
+    state.obstacles = level.obstacles;
+    turn = 1; currentPlayer = 1;
+    saveState();
+};
+
+document.getElementById('joinBtn').onclick = () => {
+    room = document.getElementById('roomInput').value.trim();
+    if(!room) return alert("Назва кімнати?");
+    playerId = parseInt(document.getElementById('playerSelect').value);
+    const raceIdx = document.getElementById('raceSelect').value;
+    const selectedRaceData = JSON.parse(JSON.stringify(myRaces[raceIdx]));
+    get(ref(db, 'games/'+room)).then(snap => {
+        if(!snap.exists()) {
+            const level = generateLevelData();
+            state = { 
+                units: [], money: {1: 500000, 2: 500000}, 
+                cities: level.cities, obstacles: level.obstacles,
+                playerRaces: { 1: null, 2: null } 
+            };
+            state.playerRaces[playerId] = selectedRaceData;
+            set(ref(db, 'games/' + room), { state, turn: 1, currentPlayer: 1 });
+        } else {
+            state = snap.val().state;
+            if(!state.playerRaces) state.playerRaces = { 1: null, 2: null };
+            if(!state.units) state.units = [];
+            state.playerRaces[playerId] = selectedRaceData;
+            saveState();
+        }
+        onValue(ref(db, 'games/'+room), (s) => {
+            let d = s.val(); if(d && d.state) { state = d.state; turn = d.turn; currentPlayer = d.currentPlayer; render(); }
+        });
+    });
+};
+
+createGrid(); 
+if(currentSyncKey) loadCloudRaces(); else { renderEditor(); updateRaceSelect(); }
+render();
 </script>
 </body>
 </html>
