@@ -216,6 +216,7 @@ window.deleteUnit = (rI, uI) => { myRaces[rI].units.splice(uI, 1); saveRacesToCl
 
 function renderEditor() {
     const list = document.getElementById('racesList');
+    if(!list) return;
     list.innerHTML = myRaces.map((race, rIdx) => `
         <div class="card" style="border-top: 5px solid #2196F3; margin-bottom: 30px; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
             <div style="display:flex; justify-content:space-between; align-items:center; background: #f8f9fa; padding: 10px; border-radius: 8px 8px 0 0; margin: -12px -12px 15px -12px; border-bottom: 1px solid #eee;">
@@ -329,8 +330,9 @@ window.startBuy = (id) => { buyMode = id; };
 
 function cellClick(x, y) {
     if(currentPlayer !== playerId) return;
-    let units = state.units || [];
-    let unitAtCell = units.find(u => u.x === x && u.y === y);
+    if(!state.units) state.units = []; // ЗАХИСТ ВІД ПОМИЛКИ undefined
+    
+    let unitAtCell = state.units.find(u => u.x === x && u.y === y);
 
     if(buyMode) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
@@ -439,6 +441,7 @@ document.getElementById('joinBtn').onclick = () => {
         } else {
             state = snap.val().state;
             if(!state.playerRaces) state.playerRaces = { 1: null, 2: null };
+            if(!state.units) state.units = [];
             state.playerRaces[playerId] = selectedRaceData;
             saveState();
         }
