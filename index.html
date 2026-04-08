@@ -145,6 +145,15 @@
         height: 35px !important; 
     }
 
+           /* Центруємо емоджі гір та міст у маленьких клітинках */
+    .cell span {
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important; /* Магія центрування */
+        font-size: 20px !important; /* Трохи зменшуємо, щоб емоджі не тиснули на краї */
+        margin: 0 !important;
+    }
+
     /* Коригуємо розміри іконок під 35px */
     .hp, .mp { font-size: 7px !important; padding: 0 1px !important; }
     .unitImg { transform: scale(0.9); }
