@@ -26,7 +26,22 @@
             background-image: url('img/ground.png'); background-size: cover; cursor: pointer; 
         }
         .cell:hover { filter: brightness(1.1); }
-        .divider { border-right: 3px dashed #333 !important; }
+      /* Знаходимо .divider у стилях і замінюємо на це: */
+.divider { 
+    position: relative; 
+}
+
+.divider::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -2px; /* Зсуваємо лінію рівно на край */
+    bottom: 0;
+    width: 4px;
+    border-right: 3px dashed rgba(0, 0, 0, 0.6); /* Чорний пунктир з невеликою прозорістю */
+    z-index: 10; /* Це винесе пунктир НАД картинкою фону */
+    pointer-events: none; /* Щоб лінія не заважала клацати по клітинці */
+}
 
         .unitImg { width: 100%; height: 100%; object-fit: contain; z-index: 2; position: relative; pointer-events: none; }
         .unitP1 { filter: drop-shadow(0 0 4px #2196F3); }
