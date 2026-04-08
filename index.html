@@ -162,6 +162,61 @@
     }
     
     #rightPanel { order: 3; } 
+           /* --- СТИЛІ ДЛЯ РЕДАКТОРА (МОБІЛЬНА ВЕРСІЯ) --- */
+
+    .race-editor { 
+        padding: 10px !important; 
+    }
+
+    /* Блок з ключем синхронізації */
+    .race-editor div[style*="background: #e3f2fd"] {
+        flex-direction: column !important; /* Елементи в стовпчик */
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .race-editor #syncKey {
+        width: 100% !important; /* Поле на всю ширину */
+        box-sizing: border-box;
+    }
+
+    /* Заголовок раси: Назва + Кнопка видалення */
+    .race-editor .card div[style*="display:flex"] {
+        flex-direction: column !important;
+        gap: 10px;
+        align-items: flex-start !important;
+    }
+
+    .race-editor .card input[type="text"][style*="width: 250px"] {
+        width: 100% !important; /* Назва раси на всю ширину */
+        border: 1px solid #ddd !important;
+        background: #fff !important;
+    }
+
+    /* Форма юніта: робимо поля в 2 стовпчики, щоб було компактно */
+    .unit-form {
+        grid-template-columns: 1fr 1fr !important; 
+        padding: 10px !important;
+        gap: 8px !important;
+    }
+
+    /* Поле з посиланням на картинку та кнопка видалення юніта */
+    .unit-form div[style*="grid-column: span 2"],
+    .unit-form div[style*="display: flex; align-items: flex-end"] {
+        grid-column: span 2 !important;
+    }
+
+    .unit-form input {
+        width: 100% !important;
+        box-sizing: border-box;
+        font-size: 14px !important;
+    }
+
+    /* Кнопки в редакторі */
+    .race-editor button {
+        width: 100% !important; /* Всі великі кнопки на всю ширину */
+        padding: 12px !important;
+    }
 }
     </style>
 </head>
