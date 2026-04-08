@@ -8,6 +8,7 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         
+        /* Таби */
         #tabs { display: flex; gap: 10px; margin: 20px 0; z-index: 10; }
         .tab-btn { padding: 12px 25px; cursor: pointer; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: #2196F3; color: white; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3); }
@@ -16,8 +17,10 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* Контейнер гри */
         .game-layout { display: flex; justify-content: center; align-items: flex-start; gap: 15px; width: 100%; }
 
+        /* Ігрове поле */
         #gridWrapper { overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 4px solid #fff; }
         #grid { display: grid; grid-template-columns: repeat(18, 55px); background: #ccc; }
         
@@ -29,6 +32,7 @@
         .cell:hover { filter: brightness(1.1); }
         .divider { border-right: 3px dashed #333 !important; }
 
+        /* Юніти */
         .unitImg { width: 100%; height: 100%; object-fit: contain; z-index: 2; position: relative; pointer-events: none; }
         .unitP1 { filter: drop-shadow(0 0 4px #2196F3); }
         .unitP2 { filter: drop-shadow(0 0 4px #f44336); }
@@ -38,7 +42,7 @@
         .move { background: rgba(76, 175, 80, 0.4); }
         .selected { outline: 3px solid #000; z-index: 5; }
         
-        /* ПРАВКА: Меч при наведенні */
+        /* Меч при наведенні */
         .attackBorder { outline: 3px solid #f44336; animation: blink 1s infinite; }
         .attackBorder:hover::after {
             content: '⚔️';
@@ -50,16 +54,17 @@
             pointer-events: none;
         }
 
-        /* ПРАВКА: Анімація ураження */
+        /* Анімація ураження */
         @keyframes hitEffect {
-            0% { transform: scale(1); filter: brightness(3) contrast(2); }
-            50% { transform: scale(1.3) rotate(10deg); filter: hue-rotate(90deg); }
+            0% { transform: scale(1); filter: brightness(3); }
+            50% { transform: scale(1.3); filter: hue-rotate(90deg); }
             100% { transform: scale(1); filter: brightness(1); }
         }
         .hit { animation: hitEffect 0.5s ease-out; z-index: 20; }
 
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+        /* Панелі */
         .panel { width: 220px; flex-shrink: 0; }
         .card { background: white; padding: 12px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .shopCard { text-align: center; transition: transform 0.2s; }
@@ -68,6 +73,7 @@
         .buyBtn { width: 100%; padding: 10px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; }
         .buyBtn:disabled { background: #ccc; cursor: not-allowed; }
 
+        /* Редактор */
         .race-editor { background: white; padding: 25px; border-radius: 15px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .unit-form { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: #fafafa; }
         .delete-btn { background: #ff5252; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 6px; }
@@ -142,7 +148,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let state = { units: [], money: {1: 500000, 2: 500000}, cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}], playerRaces: { 1: null, 2: null } };
+// Початковий стан із захистом від порожніх даних
+let state = { 
+    units: [], 
+    money: {1: 500000, 2: 500000}, 
+    cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}], 
+    playerRaces: { 1: null, 2: null } 
+};
+
 let currentPlayer = 1, playerId = 1, turn = 1, room = "", selectedUnit = null, buyMode = null;
 
 const defaultRace = {
@@ -207,37 +220,49 @@ function createGrid() {
 }
 
 function render() {
+    if(!state) return;
     document.getElementById('turn').innerText = turn;
     document.getElementById('player').innerText = currentPlayer;
-    document.getElementById('money1').innerText = (state.money[1]/1000) + 'к';
-    document.getElementById('money2').innerText = (state.money[2]/1000) + 'к';
+    document.getElementById('money1').innerText = ((state.money ? state.money[1] : 0)/1000) + 'к';
+    document.getElementById('money2').innerText = ((state.money ? state.money[2] : 0)/1000) + 'к';
     document.getElementById('endTurnBtn').disabled = (currentPlayer !== playerId);
+
     document.querySelectorAll('.cell').forEach(c => { c.innerHTML = ''; c.classList.remove('move','selected','attackBorder'); });
-    state.cities.forEach(c => {
+
+    const cities = state.cities || [];
+    cities.forEach(c => {
         let cell = document.querySelector(`.cell[data-x='${c.x}'][data-y='${c.y}']`);
         if(cell) cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;">🏰</span>';
     });
-    state.units.forEach(u => {
+
+    const units = state.units || [];
+    units.forEach(u => {
         let cell = document.querySelector(`.cell[data-x='${u.x}'][data-y='${u.y}']`);
         if(!cell) return;
         let img = document.createElement('img'); img.src = u.img; img.className = `unitImg ${u.owner === 1 ? 'unitP1' : 'unitP2'}`;
         cell.appendChild(img);
         let h = document.createElement('div'); h.className = 'hp'; h.innerText = u.hp; cell.appendChild(h);
         let m = document.createElement('div'); m.className = 'mp'; m.innerText = u.movePoints; cell.appendChild(m);
-        if(u === selectedUnit) cell.classList.add('selected');
+        if(selectedUnit && u.x === selectedUnit.x && u.y === selectedUnit.y) cell.classList.add('selected');
     });
+
     if(selectedUnit) { highlightMoves(selectedUnit); highlightAttacks(selectedUnit); }
     renderShop();
 }
 
 function renderShop() {
     const lP = document.getElementById('leftPanel'); const rP = document.getElementById('rightPanel');
+    if(!lP || !rP) return;
+
     const p1R = (state.playerRaces && state.playerRaces[1]) ? state.playerRaces[1] : defaultRace;
     const p2R = (state.playerRaces && state.playerRaces[2]) ? state.playerRaces[2] : defaultRace;
+    
     let h1 = `<div style="text-align:center; padding:8px; background:#2196F3; color:white; border-radius:8px; margin-bottom:10px;"><b>${p1R.name}</b></div>`;
-    p1R.units.forEach(u => { h1 += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==1||playerId!==1?'disabled':''}>Купити</button></div>`; });
+    if(p1R.units) p1R.units.forEach(u => { h1 += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==1||playerId!==1?'disabled':''}>Купити</button></div>`; });
+    
     let h2 = `<div style="text-align:center; padding:8px; background:#f44336; color:white; border-radius:8px; margin-bottom:10px;"><b>${p2R.name}</b></div>`;
-    p2R.units.forEach(u => { h2 += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==2||playerId!==2?'disabled':''}>Купити</button></div>`; });
+    if(p2R.units) p2R.units.forEach(u => { h2 += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==2||playerId!==2?'disabled':''}>Купити</button></div>`; });
+    
     lP.innerHTML = h1; rP.innerHTML = h2;
 }
 
@@ -245,14 +270,15 @@ window.startBuy = (id) => { buyMode = id; };
 
 function cellClick(x, y) {
     if(currentPlayer !== playerId) return;
-    let unitAtCell = state.units.find(u => u.x === x && u.y === y);
+    const units = state.units || [];
+    let unitAtCell = units.find(u => u.x === x && u.y === y);
     let targetCell = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
 
     if(buyMode) {
         if(unitAtCell || (playerId === 1 ? x > 8 : x < 9)) return;
-        const myR = state.playerRaces[playerId] || defaultRace;
+        const myR = (state.playerRaces && state.playerRaces[playerId]) ? state.playerRaces[playerId] : defaultRace;
         const uD = myR.units.find(u => u.id === buyMode);
-        if(state.money[playerId] >= uD.price) {
+        if(uD && state.money[playerId] >= uD.price) {
             state.money[playerId] -= uD.price;
             state.units.push({ ...uD, x, y, owner: playerId, movePoints: 0, attacked: true });
             buyMode = null; saveState();
@@ -262,17 +288,12 @@ function cellClick(x, y) {
 
     if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
 
-    // АТАКА ТА АНІМАЦІЯ
     if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
         if(Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y)) <= selectedUnit.range) {
-            
-            // ПРАВКА: Ефект удару
             targetCell.classList.add('hit');
             setTimeout(() => targetCell.classList.remove('hit'), 500);
-
             unitAtCell.hp -= selectedUnit.atk; 
-            selectedUnit.attacked = true; // Тепер він точно не вдарить вдруге за хід
-            
+            selectedUnit.attacked = true;
             if(unitAtCell.hp <= 0) state.units = state.units.filter(u => u !== unitAtCell);
             saveState();
         }
@@ -286,17 +307,17 @@ function cellClick(x, y) {
 }
 
 function highlightMoves(u) {
-    if(u.movePoints <= 0) return;
+    if(!u || u.movePoints <= 0) return;
     for(let x=0; x<18; x++) for(let y=0; y<10; y++) {
-        if(Math.max(Math.abs(u.x-x), Math.abs(u.y-y)) <= u.movePoints && !state.units.some(un => un.x===x && un.y===y)) {
+        if(Math.max(Math.abs(u.x-x), Math.abs(u.y-y)) <= u.movePoints && !(state.units || []).some(un => un.x===x && un.y===y)) {
             let c = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`); if(c) c.classList.add('move');
         }
     }
 }
 
 function highlightAttacks(u) {
-    if(u.attacked) return;
-    state.units.forEach(e => {
+    if(!u || u.attacked) return;
+    (state.units || []).forEach(e => {
         if(e.owner !== u.owner && Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y)) <= u.range) {
             let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`); if(c) c.classList.add('attackBorder');
         }
@@ -306,28 +327,50 @@ function highlightAttacks(u) {
 window.endTurn = () => {
     currentPlayer = (currentPlayer === 1) ? 2 : 1; if(currentPlayer === 1) turn++;
     state.money[currentPlayer] += 100000;
-    state.units.forEach(u => { if(u.owner === currentPlayer) { u.movePoints = u.speed; u.attacked = false; }});
+    (state.units || []).forEach(u => { if(u.owner === currentPlayer) { u.movePoints = u.speed; u.attacked = false; }});
     selectedUnit = null; saveState();
 };
 
 window.saveState = () => { if(room) set(ref(db, 'games/'+room), {state, turn, currentPlayer}); };
-window.resetState = () => { state.units = []; state.money = {1:500000, 2:500000}; turn = 1; currentPlayer = 1; saveState(); };
+
+window.resetState = () => { 
+    state.units = []; state.money = {1:500000, 2:500000}; turn = 1; currentPlayer = 1; 
+    saveState(); 
+};
 
 document.getElementById('joinBtn').onclick = () => {
     room = document.getElementById('roomInput').value.trim();
-    if(!room) return alert("Кімната?");
+    if(!room) return alert("Введіть назву кімнати!");
     playerId = parseInt(document.getElementById('playerSelect').value);
     const raceIdx = document.getElementById('raceSelect').value;
-    const myRD = myRaces[raceIdx];
+    const selectedRaceData = JSON.parse(JSON.stringify(myRaces[raceIdx]));
+
     get(ref(db, 'games/'+room)).then(snap => {
         if(!snap.exists()) {
-            state.playerRaces = { 1: null, 2: null }; state.playerRaces[playerId] = myRD; resetState();
+            state = {
+                units: [],
+                money: {1: 500000, 2: 500000},
+                cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}],
+                playerRaces: { 1: null, 2: null }
+            };
+            state.playerRaces[playerId] = selectedRaceData;
+            set(ref(db, 'games/' + room), { state, turn: 1, currentPlayer: 1 });
         } else {
-            state = snap.val().state; if(!state.playerRaces) state.playerRaces = { 1: null, 2: null };
-            state.playerRaces[playerId] = myRD; saveState();
+            let serverData = snap.val();
+            state = serverData.state;
+            if(!state.playerRaces) state.playerRaces = { 1: null, 2: null };
+            state.playerRaces[playerId] = selectedRaceData;
+            saveState();
         }
         onValue(ref(db, 'games/'+room), (s) => {
-            let d = s.val(); if(d) { state = d.state; turn = d.turn; currentPlayer = d.currentPlayer; render(); }
+            let d = s.val(); 
+            if(d && d.state) { 
+                state = d.state;
+                if(!state.units) state.units = [];
+                if(!state.cities) state.cities = [];
+                turn = d.turn; currentPlayer = d.currentPlayer; 
+                render(); 
+            }
         });
     });
 };
