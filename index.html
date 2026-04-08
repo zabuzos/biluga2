@@ -66,6 +66,50 @@
 
         #menu { text-align: center; background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        @media (max-width: 900px) {
+    /* Робимо ієрархію: Магазин 1 -> Поле -> Магазин 2 */
+    .game-layout { 
+        flex-direction: column; 
+        align-items: center; 
+    }
+
+    /* Магазини у ряд по 3 юніти */
+    .panel { 
+        width: 100% !important; 
+        display: flex !important; 
+        flex-direction: row !important;
+        overflow-x: auto; 
+        gap: 10px; 
+        padding: 10px;
+        background: #eee;
+    }
+
+    .shopCard { 
+        min-width: calc(33.33% - 15px); /* Рівно 3 в ряд */
+        flex-shrink: 0;
+        padding: 5px !important;
+    }
+
+    .shopImg { height: 45px !important; }
+
+    /* ПРИМУСОВО 40px для клітинок на мобілках */
+    #grid { 
+        grid-template-columns: repeat(18, 40px) !important; 
+    }
+
+    .cell { 
+        width: 40px !important; 
+        height: 40px !important; 
+    }
+
+    /* Зменшуємо шрифти HP/MP для маленьких клітинок */
+    .hp, .mp { font-size: 8px !important; padding: 0 2px !important; }
+
+    /* Порядок: панель 1 зверху, центр, панель 2 знизу */
+    #leftPanel { order: 1; }
+    .center-area { order: 2; width: 100%; }
+    #rightPanel { order: 3; }
+}
     </style>
 </head>
 <body>
