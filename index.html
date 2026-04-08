@@ -25,23 +25,18 @@
             width: 55px; height: 55px; border: 1px solid rgba(0,0,0,0.05); position: relative; 
             background-image: url('img/ground.png'); background-size: cover; cursor: pointer; 
         }
-        .cell:hover { filter: brightness(1.1); }
-      /* Знаходимо .divider у стилях і замінюємо на це: */
-.divider { 
-    position: relative; 
-}
 
-.divider::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: -2px; /* Зсуваємо лінію рівно на край */
-    bottom: 0;
-    width: 4px;
-    border-right: 3px dashed rgba(0, 0, 0, 0.6); /* Чорний пунктир з невеликою прозорістю */
-    z-index: 10; /* Це винесе пунктир НАД картинкою фону */
-    pointer-events: none; /* Щоб лінія не заважала клацати по клітинці */
-}
+        /* ПРАВКА: Пунктир поверх фону */
+        .divider { position: relative; }
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 0; right: -2px; bottom: 0;
+            width: 4px;
+            border-right: 3px dashed rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            pointer-events: none;
+        }
 
         .unitImg { width: 100%; height: 100%; object-fit: contain; z-index: 2; position: relative; pointer-events: none; }
         .unitP1 { filter: drop-shadow(0 0 4px #2196F3); }
@@ -72,13 +67,6 @@
 
         #menu { text-align: center; background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-
-        @media (max-width: 1200px) {
-            .game-layout { flex-direction: column; align-items: center; }
-            .panel { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-            #grid { grid-template-columns: repeat(18, 40px); }
-            .cell { width: 40px; height: 40px; }
-        }
     </style>
 </head>
 <body>
@@ -120,9 +108,8 @@
     <div class="race-editor">
         <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
             <strong>🔑 Ключ синхронізації:</strong>
-            <input type="text" id="syncKey" placeholder="Придумайте пароль..." style="width: 200px;">
+            <input type="text" id="syncKey" placeholder="Ваш ключ..." style="width: 200px;">
             <button onclick="loadCloudRaces()" style="background: #2196F3; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">Завантажити</button>
-            <small>Введіть однаковий ключ на всіх пристроях.</small>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>Управління комплектами рас</h2>
@@ -158,32 +145,20 @@ let myRaces = [defaultRace];
 let currentSyncKey = localStorage.getItem('familySyncKey') || "";
 if(currentSyncKey) document.getElementById('syncKey').value = currentSyncKey;
 
-// --- ХМАРНИЙ РЕДАКТОР ---
 window.loadCloudRaces = () => {
     const key = document.getElementById('syncKey').value.trim();
     if(!key) return alert("Введіть ключ!");
     currentSyncKey = key;
     localStorage.setItem('familySyncKey', key);
-    
     onValue(ref(db, 'cloud_races/' + key), (snap) => {
-        if(snap.exists()) {
-            myRaces = snap.val();
-        } else {
-            myRaces = [defaultRace];
-            saveRacesToCloud();
-        }
-        renderEditor();
-        updateRaceSelect();
+        if(snap.exists()) myRaces = snap.val();
+        renderEditor(); updateRaceSelect();
     });
 };
 
-function saveRacesToCloud() {
-    if(!currentSyncKey) return;
-    set(ref(db, 'cloud_races/' + currentSyncKey), myRaces);
-}
-
+function saveRacesToCloud() { if(currentSyncKey) set(ref(db, 'cloud_races/' + currentSyncKey), myRaces); }
 window.addNewRace = () => { let n = prompt("Назва раси:"); if(n) { myRaces.push({ name: n, units: [] }); saveRacesToCloud(); } };
-window.deleteRace = (i) => { if(confirm("Видалити расу?")) { myRaces.splice(i, 1); saveRacesToCloud(); } };
+window.deleteRace = (i) => { if(confirm("Видалити?")) { myRaces.splice(i, 1); saveRacesToCloud(); } };
 window.addUnitToRace = (rI) => { myRaces[rI].units.push({ id: 'u' + Date.now(), name: "Воїн", speed: 2, atk: 15, hp: 50, range: 1, price: 50000, img: "https://cdn-icons-png.flaticon.com/512/2042/2042878.png" }); saveRacesToCloud(); };
 window.updateUnit = (rI, uI, f, v) => { myRaces[rI].units[uI][f] = (f==='name'||f==='img') ? v : Number(v); saveRacesToCloud(); };
 window.deleteUnit = (rI, uI) => { myRaces[rI].units.splice(uI, 1); saveRacesToCloud(); };
@@ -210,7 +185,6 @@ function renderEditor() {
     `).join('');
 }
 
-// --- ІГРОВА ЛОГІКА ---
 window.switchTab = (tab) => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -236,16 +210,14 @@ function render() {
     if(!state) return;
     document.getElementById('turn').innerText = turn;
     document.getElementById('player').innerText = currentPlayer;
-    document.getElementById('money1').innerText = ((state.money ? state.money[1] : 0)/1000) + 'к';
-    document.getElementById('money2').innerText = ((state.money ? state.money[2] : 0)/1000) + 'к';
+    document.getElementById('money1').innerText = (state.money[1]/1000) + 'к';
+    document.getElementById('money2').innerText = (state.money[2]/1000) + 'к';
     document.getElementById('endTurnBtn').disabled = (currentPlayer !== playerId);
     document.querySelectorAll('.cell').forEach(c => { c.innerHTML = ''; c.classList.remove('move','selected','attackBorder'); });
-
     (state.cities || []).forEach(c => {
         let cell = document.querySelector(`.cell[data-x='${c.x}'][data-y='${c.y}']`);
         if(cell) cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;">🏰</span>';
     });
-
     (state.units || []).forEach(u => {
         let cell = document.querySelector(`.cell[data-x='${u.x}'][data-y='${u.y}']`);
         if(!cell) return;
@@ -255,7 +227,6 @@ function render() {
         let m = document.createElement('div'); m.className = 'mp'; m.innerText = u.movePoints; cell.appendChild(m);
         if(selectedUnit && u.x === selectedUnit.x && u.y === selectedUnit.y) cell.classList.add('selected');
     });
-
     if(selectedUnit) { highlightMoves(selectedUnit); highlightAttacks(selectedUnit); }
     renderShop();
 }
@@ -264,7 +235,6 @@ function renderShop() {
     const lP = document.getElementById('leftPanel'); const rP = document.getElementById('rightPanel');
     const p1R = (state.playerRaces && state.playerRaces[1]) ? state.playerRaces[1] : defaultRace;
     const p2R = (state.playerRaces && state.playerRaces[2]) ? state.playerRaces[2] : defaultRace;
-    
     let buildShop = (race, pNum) => {
         let html = `<div style="text-align:center; padding:8px; background:${pNum===1?'#2196F3':'#f44336'}; color:white; border-radius:8px; margin-bottom:10px;"><b>${race.name}</b></div>`;
         (race.units || []).forEach(u => {
@@ -279,7 +249,8 @@ window.startBuy = (id) => { buyMode = id; };
 
 function cellClick(x, y) {
     if(currentPlayer !== playerId) return;
-    let unitAtCell = (state.units || []).find(u => u.x === x && u.y === y);
+    let units = state.units || [];
+    let unitAtCell = units.find(u => u.x === x && u.y === y);
     if(buyMode) {
         if(unitAtCell || (playerId === 1 ? x > 8 : x < 9)) return;
         const myR = (state.playerRaces && state.playerRaces[playerId]) ? state.playerRaces[playerId] : defaultRace;
@@ -292,13 +263,15 @@ function cellClick(x, y) {
         return;
     }
     if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
+    
+    // ПРАВКА: АТАКА (один раз за хід)
     if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
         if(Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y)) <= selectedUnit.range) {
+            selectedUnit.attacked = true; // Мітимо миттєво
             document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-            setTimeout(() => render(), 500);
-            unitAtCell.hp -= selectedUnit.atk; selectedUnit.attacked = true;
+            unitAtCell.hp -= selectedUnit.atk;
             if(unitAtCell.hp <= 0) state.units = state.units.filter(u => u !== unitAtCell);
-            saveState();
+            saveState(); setTimeout(() => render(), 500);
         }
         return;
     }
@@ -326,10 +299,17 @@ function highlightAttacks(u) {
     });
 }
 
+// ПРАВКА: ГРОШІ НАРАХОВУЮТЬСЯ НАСТУПНОМУ ГРАВЦЕВІ
 window.endTurn = () => {
-    currentPlayer = (currentPlayer === 1) ? 2 : 1; if(currentPlayer === 1) turn++;
+    currentPlayer = (currentPlayer === 1) ? 2 : 1; 
+    if(currentPlayer === 1) turn++;
+    
+    // Гроші приходять тому, чий хід ПОЧАВСЯ
     state.money[currentPlayer] += 100000;
-    (state.units || []).forEach(u => { if(u.owner === currentPlayer) { u.movePoints = u.speed; u.attacked = false; }});
+
+    (state.units || []).forEach(u => { 
+        if(u.owner === currentPlayer) { u.movePoints = u.speed; u.attacked = false; }
+    });
     selectedUnit = null; saveState();
 };
 
@@ -338,11 +318,10 @@ window.resetState = () => { state.units = []; state.money = {1:500000, 2:500000}
 
 document.getElementById('joinBtn').onclick = () => {
     room = document.getElementById('roomInput').value.trim();
-    if(!room) return alert("Введіть назву кімнати!");
+    if(!room) return alert("Назва кімнати?");
     playerId = parseInt(document.getElementById('playerSelect').value);
     const raceIdx = document.getElementById('raceSelect').value;
     const selectedRaceData = JSON.parse(JSON.stringify(myRaces[raceIdx]));
-
     get(ref(db, 'games/'+room)).then(snap => {
         if(!snap.exists()) {
             state = { units: [], money: {1: 500000, 2: 500000}, cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}], playerRaces: { 1: null, 2: null } };
