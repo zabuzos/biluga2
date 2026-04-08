@@ -6,21 +6,35 @@
     <title>Beluga 3: Custom Multiplayer</title>
 
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         
         /* Таби */
-        #tabs { display: flex; gap: 10px; margin: 20px 0; }
+        #tabs { display: flex; gap: 10px; margin: 20px 0; z-index: 10; }
         .tab-btn { padding: 12px 25px; cursor: pointer; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; transition: 0.3s; }
         .tab-btn.active { background: #2196F3; color: white; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3); }
 
-        .view { display: none; width: 95%; max-width: 1400px; animation: fadeIn 0.3s; }
-        .view.active { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .view { display: none; width: 98%; max-width: 1600px; animation: fadeIn 0.3s; }
+        .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Контейнер для ігрового процесу (фікс зсуву магазину) */
+        .game-layout {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 15px;
+            width: 100%;
+        }
 
         /* Ігрове поле */
         #gridWrapper { overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 4px solid #fff; }
         #grid { display: grid; grid-template-columns: repeat(18, 55px); background: #ccc; }
-        .cell { width: 55px; height: 55px; border: 1px solid rgba(0,0,0,0.05); position: relative; background-image: url('https://img.freepik.com/free-photo/green-grass-texture-background_1249-535.jpg'); background-size: cover; cursor: pointer; }
+        
+        .cell { 
+            width: 55px; height: 55px; border: 1px solid rgba(0,0,0,0.05); position: relative; 
+            background-image: url('img/ground.png'); /* Твій бекграунд */
+            background-size: cover; cursor: pointer; 
+        }
         .cell:hover { filter: brightness(1.1); }
         .divider { border-right: 3px dashed #333 !important; }
 
@@ -37,452 +51,15 @@
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         /* Панелі та картки */
-        .panel { width: 240px; }
-        .card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .panel { width: 220px; flex-shrink: 0; }
+        .card { background: white; padding: 12px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .shopCard { text-align: center; transition: transform 0.2s; }
-        .shopCard:hover { transform: translateY(-5px); }
-        .shopImg { width: 100%; height: 90px; object-fit: contain; margin: 10px 0; }
+        .shopCard:hover { transform: translateY(-3px); }
+        .shopImg { width: 100%; height: 80px; object-fit: contain; margin: 8px 0; }
         .buyBtn { width: 100%; padding: 10px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; }
         .buyBtn:disabled { background: #ccc; cursor: not-allowed; }
 
         /* Редактор */
         .race-editor { background: white; padding: 25px; border-radius: 15px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .unit-form { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: #fafafa; }
-        .delete-btn { background: #ff5252; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 6px; }
-
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-
-        @media (max-width: 1024px) {
-            #grid { grid-template-columns: repeat(18, 40px); }
-            .cell { width: 40px; height: 40px; }
-            .panel { width: 100%; display: flex; flex-wrap: wrap; gap: 10px; }
-            .shopCard { width: 45%; }
-        }
-    </style>
-</head>
-<body>
-
-<div id="tabs">
-    <button class="tab-btn active" onclick="switchTab('game')">🎮 Гра</button>
-    <button class="tab-btn" onclick="switchTab('editor')">🛠️ Редактор Рас</button>
-</div>
-
-<div id="gameView" class="view active">
-    <div id="menu" style="width: 100%; text-align: center; background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-        <input type="text" id="roomInput" placeholder="Назва кімнати (напр. super-battle)" style="width: 200px;" />
-        <select id="playerSelect">
-            <option value="1">Гравець 1 (Синій)</option>
-            <option value="2">Гравець 2 (Червоний)</option>
-        </select>
-        <select id="raceSelect">
-            </select>
-        <button id="joinBtn" style="padding: 10px 25px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Увійти в гру</button>
-    </div>
-
-    <div class="panel" id="leftPanel"></div>
-
-    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center;">
-        <div id="turnPanel" class="card" style="text-align: center; min-width: 300px;">
-            <h3 style="margin: 0 0 10px 0;">Хід: <span id="turn">1</span> | Гравець: <span id="player">1</span></h3>
-            <div style="display: flex; justify-content: space-around; font-size: 1.1em;">
-                <span style="color: #2196F3;">💰 P1: <b id="money1">0</b></span>
-                <span style="color: #f44336;">💰 P2: <b id="money2">0</b></span>
-            </div>
-        </div>
-
-        <div id="gridWrapper"><div id="grid"></div></div>
-
-        <div style="margin-top: 20px; display: flex; gap: 15px;">
-            <button onclick="endTurn()" class="buyBtn" id="endTurnBtn" style="width: 220px; height: 50px; font-size: 1.1em;">Завершити хід</button>
-            <button onclick="resetState()" style="background: #ef6c00; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Нова гра</button>
-        </div>
-    </div>
-
-    <div class="panel" id="rightPanel"></div>
-</div>
-
-<div id="editorView" class="view">
-    <div class="race-editor">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2>Управління комплектами юнітів</h2>
-            <button onclick="addNewRace()" style="background: #4CAF50; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">+ Створити нову расу</button>
-        </div>
-        <div id="racesList"></div>
-    </div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
-
-// Конфігурація Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyBM6L4pO6cCkCX6mhChNG0-5RxKYOIV1fY",
-    authDomain: "beluga-a7197.firebaseapp.com",
-    databaseURL: "https://beluga-a7197-default-rtdb.firebaseio.com",
-    projectId: "beluga-a7197",
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// --- ГЛОБАЛЬНИЙ СТАН ---
-let state = { 
-    units: [], 
-    money: {1: 500000, 2: 500000}, 
-    cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}],
-    playerRaces: { 1: null, 2: null } 
-};
-
-let currentPlayer = 1;
-let playerId = 1;
-let turn = 1;
-let room = "";
-let selectedUnit = null;
-let buyMode = null;
-
-// --- СТАНДАРТНІ ДАНІ ---
-const defaultRace = {
-    name: "Стандартна Раса",
-    units: [
-        {id: 'd1', name:"Піхота", speed:3, atk:20, hp:50, range:1, price:40000, img:"https://cdn-icons-png.flaticon.com/512/1054/1054363.png"},
-        {id: 'd2', name:"Стрілець", speed:1, atk:15, hp:40, range:3, price:60000, img:"https://cdn-icons-png.flaticon.com/512/3012/3012423.png"},
-        {id: 'd3', name:"Лицар", speed:4, atk:25, hp:70, range:1, price:120000, img:"https://cdn-icons-png.flaticon.com/512/2829/2829774.png"}
-    ]
-};
-
-// Завантаження рас користувача
-let myRaces = JSON.parse(localStorage.getItem('myRaces')) || [defaultRace];
-
-// --- УПРАВЛІННЯ ВКЛАДКАМИ ---
-window.switchTab = (tab) => {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tab + 'View').classList.add('active');
-    event.target.classList.add('active');
-    if(tab === 'editor') renderEditor();
-    if(tab === 'game') updateRaceSelect();
-};
-
-// --- ЛОГІКА РЕДАКТОРА ---
-function saveRacesToLocal() {
-    localStorage.setItem('myRaces', JSON.stringify(myRaces));
-    renderEditor();
-    updateRaceSelect();
-}
-
-window.addNewRace = () => {
-    const name = prompt("Назва нової раси:", "Нова Раса");
-    if(name) {
-        myRaces.push({ name, units: [] });
-        saveRacesToLocal();
-    }
-};
-
-window.deleteRace = (index) => {
-    if(confirm("Видалити всю расу?")) {
-        myRaces.splice(index, 1);
-        saveRacesToLocal();
-    }
-};
-
-window.addUnitToRace = (rIdx) => {
-    myRaces[rIdx].units.push({
-        id: 'u' + Date.now(),
-        name: "Воїн", speed: 2, atk: 15, hp: 50, range: 1, price: 50000,
-        img: "https://cdn-icons-png.flaticon.com/512/2042/2042878.png"
-    });
-    saveRacesToLocal();
-};
-
-window.updateUnit = (rIdx, uIdx, field, value) => {
-    myRaces[rIdx].units[uIdx][field] = (field === 'name' || field === 'img') ? value : Number(value);
-    localStorage.setItem('myRaces', JSON.stringify(myRaces));
-};
-
-window.deleteUnit = (rIdx, uIdx) => {
-    myRaces[rIdx].units.splice(uIdx, 1);
-    saveRacesToLocal();
-};
-
-function renderEditor() {
-    const list = document.getElementById('racesList');
-    list.innerHTML = myRaces.map((race, rIdx) => `
-        <div class="card" style="border-top: 6px solid #2196F3;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0;">📦 Комплект: ${race.name}</h3>
-                <button class="delete-btn" onclick="deleteRace(${rIdx})">Видалити комплект</button>
-            </div>
-            ${race.units.map((unit, uIdx) => `
-                <div class="unit-form">
-                    <label>Назва: <input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></label>
-                    <label>❤️ HP: <input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></label>
-                    <label>⚔️ ATK: <input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></label>
-                    <label>🏃 Крок: <input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></label>
-                    <label>🎯 Радіус: <input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></label>
-                    <label>💰 Ціна: <input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></label>
-                    <label style="grid-column: span 2;">🔗 Фото URL: <input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 80%;"></label>
-                    <button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="height: fit-content; align-self: end;">🗑️ Видалити</button>
-                </div>
-            `).join('')}
-            <button onclick="addUnitToRace(${rIdx})" style="background:#2196F3; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">+ Додати юніта в цей комплект</button>
-        </div>
-    `).join('');
-}
-
-function updateRaceSelect() {
-    const select = document.getElementById('raceSelect');
-    select.innerHTML = myRaces.map((r, i) => `<option value="${i}">${r.name}</option>`).join('');
-}
-
-// --- ІГРОВА МЕХАНІКА ---
-
-function createGrid() {
-    let g = document.getElementById('grid'); g.innerHTML = '';
-    for(let y=0; y<10; y++) {
-        for(let x=0; x<18; x++) {
-            let d = document.createElement('div');
-            d.className = 'cell';
-            if(x === 8) d.classList.add('divider');
-            d.dataset.x = x; d.dataset.y = y;
-            d.onclick = () => cellClick(x, y);
-            g.appendChild(d);
-        }
-    }
-}
-
-function render() {
-    document.getElementById('turn').innerText = turn;
-    document.getElementById('player').innerText = currentPlayer;
-    document.getElementById('money1').innerText = (state.money[1]/1000) + 'к';
-    document.getElementById('money2').innerText = (state.money[2]/1000) + 'к';
-    document.getElementById('endTurnBtn').disabled = (currentPlayer !== playerId);
-
-    document.querySelectorAll('.cell').forEach(c => {
-        c.innerHTML = ''; 
-        c.classList.remove('move','selected','attackBorder');
-    });
-
-    state.cities.forEach(c => {
-        let cell = document.querySelector(`.cell[data-x='${c.x}'][data-y='${c.y}']`);
-        if(cell) cell.innerHTML = '<span style="font-size:26px; position:absolute; left:12px; top:8px; z-index:1; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));">🏰</span>';
-    });
-
-    state.units.forEach(u => {
-        let cell = document.querySelector(`.cell[data-x='${u.x}'][data-y='${u.y}']`);
-        if(!cell) return;
-        
-        let img = document.createElement('img');
-        img.src = u.img;
-        img.className = `unitImg ${u.owner === 1 ? 'unitP1' : 'unitP2'}`;
-        cell.appendChild(img);
-        
-        let hp = document.createElement('div'); hp.className = 'hp'; hp.innerText = u.hp; cell.appendChild(hp);
-        let mp = document.createElement('div'); mp.className = 'mp'; mp.innerText = u.movePoints; cell.appendChild(mp);
-        if(u === selectedUnit) cell.classList.add('selected');
-    });
-
-    if(selectedUnit) {
-        highlightMoves(selectedUnit);
-        highlightAttacks(selectedUnit);
-    }
-    renderShop();
-}
-
-function renderShop() {
-    const leftPanel = document.getElementById('leftPanel');
-    const rightPanel = document.getElementById('rightPanel');
-
-    const p1Race = (state.playerRaces && state.playerRaces[1]) ? state.playerRaces[1] : defaultRace;
-    const p2Race = (state.playerRaces && state.playerRaces[2]) ? state.playerRaces[2] : defaultRace;
-    
-    let h1 = `<div style="text-align:center; padding:10px; background:#2196F3; color:white; border-radius:10px; margin-bottom:15px;"><b>Раса: ${p1Race.name}</b></div>`;
-    let h2 = `<div style="text-align:center; padding:10px; background:#f44336; color:white; border-radius:10px; margin-bottom:15px;"><b>Раса: ${p2Race.name}</b></div>`;
-    
-    p1Race.units.forEach(u => {
-        h1 += `<div class="card shopCard">
-            <div style="font-weight:bold; height: 35px; overflow: hidden;">${u.name}</div>
-            <img src="${u.img}" class="shopImg">
-            <div style="font-size:0.9em; color:#666; margin-bottom:8px;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div>
-            <div style="font-weight:bold; margin-bottom:8px;">💰${u.price/1000}к</div>
-            <button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==1 || playerId!==1 ?'disabled':''}>Купити</button>
-        </div>`;
-    });
-    
-    p2Race.units.forEach(u => {
-        h2 += `<div class="card shopCard">
-            <div style="font-weight:bold; height: 35px; overflow: hidden;">${u.name}</div>
-            <img src="${u.img}" class="shopImg">
-            <div style="font-size:0.9em; color:#666; margin-bottom:8px;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div>
-            <div style="font-weight:bold; margin-bottom:8px;">💰${u.price/1000}к</div>
-            <button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==2 || playerId!==2 ?'disabled':''}>Купити</button>
-        </div>`;
-    });
-    
-    leftPanel.innerHTML = h1;
-    rightPanel.innerHTML = h2;
-}
-
-window.startBuy = (unitId) => {
-    buyMode = unitId;
-};
-
-function cellClick(x, y) {
-    if(currentPlayer !== playerId) return;
-    let unitAtCell = state.units.find(u => u.x === x && u.y === y);
-
-    // Купівля
-    if(buyMode) {
-        if(unitAtCell || (playerId === 1 ? x > 8 : x < 9)) return;
-        const myRace = state.playerRaces[playerId] || defaultRace;
-        const unitData = myRace.units.find(u => u.id === buyMode);
-        
-        if(state.money[playerId] >= unitData.price) {
-            state.money[playerId] -= unitData.price;
-            state.units.push({
-                ...unitData,
-                x, y, owner: playerId, movePoints: 0, attacked: true
-            });
-            buyMode = null;
-            saveState();
-        }
-        return;
-    }
-
-    // Вибір свого
-    if(unitAtCell && unitAtCell.owner === playerId) {
-        selectedUnit = unitAtCell;
-        render();
-        return;
-    }
-
-    // Атака ворога
-    if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
-        let dist = Math.max(Math.abs(selectedUnit.x - x), Math.abs(selectedUnit.y - y));
-        if(dist <= selectedUnit.range) {
-            unitAtCell.hp -= selectedUnit.atk;
-            selectedUnit.attacked = true;
-            if(unitAtCell.hp <= 0) state.units = state.units.filter(u => u !== unitAtCell);
-            saveState();
-        }
-        return;
-    }
-
-    // Рух в пусту клітинку
-    if(selectedUnit && selectedUnit.movePoints > 0 && !unitAtCell) {
-        let dist = Math.max(Math.abs(selectedUnit.x - x), Math.abs(selectedUnit.y - y));
-        if(dist <= selectedUnit.movePoints) {
-            selectedUnit.x = x;
-            selectedUnit.y = y;
-            selectedUnit.movePoints -= dist;
-            saveState();
-        }
-    }
-}
-
-function highlightMoves(u) {
-    if(u.movePoints <= 0) return;
-    for(let x=0; x<18; x++) {
-        for(let y=0; y<10; y++) {
-            let dist = Math.max(Math.abs(u.x - x), Math.abs(u.y - y));
-            if(dist <= u.movePoints && !state.units.some(un => un.x === x && un.y === y)) {
-                let cell = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
-                if(cell) cell.classList.add('move');
-            }
-        }
-    }
-}
-
-function highlightAttacks(u) {
-    if(u.attacked) return;
-    state.units.forEach(enemy => {
-        if(enemy.owner !== u.owner) {
-            let dist = Math.max(Math.abs(u.x - enemy.x), Math.abs(u.y - enemy.y));
-            if(dist <= u.range) {
-                let cell = document.querySelector(`.cell[data-x='${enemy.x}'][data-y='${enemy.y}']`);
-                if(cell) cell.classList.add('attackBorder');
-            }
-        }
-    });
-}
-
-window.endTurn = () => {
-    currentPlayer = (currentPlayer === 1) ? 2 : 1;
-    if(currentPlayer === 1) turn++;
-    state.money[currentPlayer] += 100000;
-    
-    state.units.forEach(u => {
-        if(u.owner === currentPlayer) {
-            u.movePoints = u.speed;
-            u.attacked = false;
-        }
-    });
-    
-    selectedUnit = null;
-    saveState();
-};
-
-window.saveState = () => { 
-    if(room) set(ref(db, 'games/' + room), {state, turn, currentPlayer}); 
-};
-
-window.resetState = () => {
-    state.units = [];
-    state.money = {1:500000, 2:500000};
-    turn = 1;
-    currentPlayer = 1;
-    saveState();
-};
-
-// --- ФУНКЦІЯ ПРИЄДНАННЯ ---
-document.getElementById('joinBtn').onclick = () => {
-    room = document.getElementById('roomInput').value.trim();
-    if(!room) return alert("Будь ласка, введіть назву кімнати!");
-    
-    playerId = parseInt(document.getElementById('playerSelect').value);
-    const raceIdx = document.getElementById('raceSelect').value;
-    const selectedRaceData = myRaces[raceIdx];
-
-    get(ref(db, 'games/' + room)).then(snapshot => {
-        if(!snapshot.exists()) {
-            // Створення нової кімнати
-            state = {
-                units: [],
-                money: {1: 500000, 2: 500000},
-                cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}],
-                playerRaces: { 1: null, 2: null }
-            };
-            state.playerRaces[playerId] = selectedRaceData;
-            resetState();
-        } else {
-            // Оновлення існуючої кімнати
-            const data = snapshot.val();
-            state = data.state;
-            if(!state.playerRaces) state.playerRaces = { 1: null, 2: null };
-            
-            state.playerRaces[playerId] = selectedRaceData;
-            saveState();
-        }
-        
-        // Підписка на оновлення в реальному часі
-        onValue(ref(db, 'games/' + room), (snap) => {
-            const d = snap.val();
-            if(d) {
-                state = d.state;
-                turn = d.turn || 1;
-                currentPlayer = d.currentPlayer || 1;
-                render();
-            }
-        });
-    });
-};
-
-// Початкова ініціалізація
-createGrid();
-updateRaceSelect();
-renderEditor();
-render();
-</script>
-
-</body>
-</html>
+        .
