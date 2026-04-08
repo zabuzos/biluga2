@@ -330,7 +330,7 @@ window.startBuy = (id) => { buyMode = id; };
 
 function cellClick(x, y) {
     if(currentPlayer !== playerId) return;
-    if(!state.units) state.units = []; // ЗАХИСТ ВІД ПОМИЛКИ undefined
+    if(!state.units) state.units = [];
     
     let unitAtCell = state.units.find(u => u.x === x && u.y === y);
 
@@ -351,16 +351,23 @@ function cellClick(x, y) {
 
     if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
     
+    // АТАКА
     if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
         if(Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y)) <= selectedUnit.range) {
-            selectedUnit.attacked = true;
+            // ФІКС: Обов'язково позначаємо як атакований
+            selectedUnit.attacked = true; 
             document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
             unitAtCell.hp -= selectedUnit.atk;
-            if(unitAtCell.hp <= 0) state.units = state.units.filter(u => u !== unitAtCell);
-            saveState(); setTimeout(() => render(), 500);
+            if(unitAtCell.hp <= 0) {
+                state.units = state.units.filter(u => u !== unitAtCell);
+            }
+            saveState(); // Зберігаємо негайно
+            setTimeout(() => render(), 500);
+            return;
         }
-        return;
     }
+
+    // РУХ
     if(selectedUnit && selectedUnit.movePoints > 0 && !unitAtCell) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
         if(isObstacle) return;
