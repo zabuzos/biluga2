@@ -120,6 +120,24 @@
 </div>
 
 <script type="module">
+    function generateRandomCities() {
+    // Для Гравця 1 (стовпчики 0 та 1)
+    let p1_x1 = Math.floor(Math.random() * 2); 
+    let p1_y1 = Math.floor(Math.random() * 4); // Верхня частина
+    let p1_x2 = Math.floor(Math.random() * 2);
+    let p1_y2 = 6 + Math.floor(Math.random() * 4); // Нижня частина
+
+    // Для Гравця 2 (стовпчики 16 та 17)
+    let p2_x1 = 16 + Math.floor(Math.random() * 2);
+    let p2_y1 = Math.floor(Math.random() * 4);
+    let p2_x2 = 16 + Math.floor(Math.random() * 2);
+    let p2_y2 = 6 + Math.floor(Math.random() * 4);
+
+    return [
+        {x: p1_x1, y: p1_y1}, {x: p1_x2, y: p1_y2}, // Міста синього
+        {x: p2_x1, y: p2_y1}, {x: p2_x2, y: p2_y2}  // Міста червоного
+    ];
+}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
@@ -374,17 +392,32 @@ window.endTurn = () => {
 };
 
 window.saveState = () => { if(room) set(ref(db, 'games/'+room), {state, turn, currentPlayer}); };
-window.resetState = () => { state.units = []; state.money = {1:500000, 2:500000}; turn = 1; currentPlayer = 1; saveState(); };
+window.resetState = () => {
+    state.units = [];
+    state.money = {1: 500000, 2: 500000};
+    state.cities = generateRandomCities(); // РАНДОМ ТУТ
+    turn = 1;
+    currentPlayer = 1;
+    saveState();
+};
 
 document.getElementById('joinBtn').onclick = () => {
     room = document.getElementById('roomInput').value.trim();
     if(!room) return alert("Назва кімнати?");
+    
     playerId = parseInt(document.getElementById('playerSelect').value);
     const raceIdx = document.getElementById('raceSelect').value;
     const selectedRaceData = JSON.parse(JSON.stringify(myRaces[raceIdx]));
+
     get(ref(db, 'games/'+room)).then(snap => {
         if(!snap.exists()) {
-            state = { units: [], money: {1: 500000, 2: 500000}, cities: [{x:1, y:4}, {x:1, y:5}, {x:16, y:4}, {x:16, y:5}], playerRaces: { 1: null, 2: null } };
+            // ЗАМІНА ТУТ: замість [{x:1, y:4}, ...] пишемо generateRandomCities()
+            state = { 
+                units: [], 
+                money: {1: 500000, 2: 500000}, 
+                cities: generateRandomCities(), 
+                playerRaces: { 1: null, 2: null } 
+            };
             state.playerRaces[playerId] = selectedRaceData;
             set(ref(db, 'games/' + room), { state, turn: 1, currentPlayer: 1 });
         } else {
@@ -394,7 +427,13 @@ document.getElementById('joinBtn').onclick = () => {
             saveState();
         }
         onValue(ref(db, 'games/'+room), (s) => {
-            let d = s.val(); if(d && d.state) { state = d.state; turn = d.turn; currentPlayer = d.currentPlayer; render(); }
+            let d = s.val(); 
+            if(d && d.state) { 
+                state = d.state; 
+                turn = d.turn; 
+                currentPlayer = d.currentPlayer; 
+                render(); 
+            }
         });
     });
 };
