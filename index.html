@@ -139,25 +139,16 @@ function generateRandomCities() {
 function generateLevelData() {
     const cities = generateRandomCities();
     const obstacles = [];
-    
-    // Рандомимо максимальний відсоток води для цієї конкретної карти (від 0 до 15%)
     const waterChance = Math.random() * 0.15; 
-    // Рандомимо відсоток гір (від 0 до 10%)
     const mountainChance = Math.random() * 0.10;
 
     for (let y = 0; y < 10; y++) {
         for (let x = 0; x < 18; x++) {
-            // Пропускаємо клітинки, де стоять міста
             if (cities.some(c => c.x === x && c.y === y)) continue;
-
             let rand = Math.random();
-            
-            // Якщо випадкове число менше за наш випадковий шанс води
             if (rand < waterChance) { 
                 obstacles.push({x, y, type: 'water'});
-            } 
-            // Якщо воно потрапляє в наступний діапазон — ставимо гору
-            else if (rand < waterChance + mountainChance) { 
+            } else if (rand < waterChance + mountainChance) { 
                 obstacles.push({x, y, type: 'mountain'});
             }
         }
@@ -295,12 +286,10 @@ function render() {
         if (ob.type === 'water') {
             cell.style.backgroundColor = '#128cc3';
             cell.style.backgroundImage = 'none';
-            cell.innerHTML = '<span style="font-size:20px; position:absolute; left:15px; top:12px; z-index:1; opacity:0.6;"></span>';
         } else if (ob.type === 'mountain') {
-            cell.style.backgroundColor = 'rgba(121, 85, 72, 0.5)'; // Коричневий (Brown 500) з прозорістю 50%
-        cell.style.backgroundImage = 'none'; // Прибираємо траву, щоб колір був чистішим
-        cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;">⛰️</span>';
-                        cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;opacity:0.5;">⛰️</span>';
+            cell.style.backgroundColor = 'rgba(121, 85, 72, 0.5)';
+            cell.style.backgroundImage = 'none';
+            cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1; opacity:0.6;">⛰️</span>';
         }
     });
 
@@ -342,18 +331,22 @@ function cellClick(x, y) {
     if(currentPlayer !== playerId) return;
     let units = state.units || [];
     let unitAtCell = units.find(u => u.x === x && u.y === y);
+
     if(buyMode) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
-        if(unitAtCell || isObstacle || (playerId === 1 ? x > 8 : x < 9)) return;
+        let isCity = (state.cities || []).some(c => c.x === x && c.y === y);
+        if(unitAtCell || isObstacle || isCity || (playerId === 1 ? x > 8 : x < 9)) return;
+        
         const myR = (state.playerRaces && state.playerRaces[playerId]) ? state.playerRaces[playerId] : defaultRace;
         const uD = myR.units.find(u => u.id === buyMode);
         if(uD && state.money[playerId] >= uD.price) {
             state.money[playerId] -= uD.price;
             state.units.push({ ...uD, x, y, owner: playerId, movePoints: 0, attacked: true });
-            buyMode = null; saveState();
+            buyMode = null; saveState(); render();
         }
         return;
     }
+
     if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
     
     if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
@@ -370,7 +363,10 @@ function cellClick(x, y) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
         if(isObstacle) return;
         let d = Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y));
-        if(d <= selectedUnit.movePoints) { selectedUnit.x = x; selectedUnit.y = y; selectedUnit.movePoints -= d; saveState(); }
+        if(d <= selectedUnit.movePoints) { 
+            selectedUnit.x = x; selectedUnit.y = y; selectedUnit.movePoints -= d; 
+            saveState(); render();
+        }
     }
 }
 
