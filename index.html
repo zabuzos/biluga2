@@ -281,11 +281,12 @@ function render() {
         let cell = document.querySelector(`.cell[data-x='${ob.x}'][data-y='${ob.y}']`);
         if (!cell) return;
         if (ob.type === 'water') {
-            cell.style.backgroundColor = '#4FC3F7';
+            cell.style.backgroundColor = '#128cc3';
             cell.style.backgroundImage = 'none';
-            cell.innerHTML = '<span style="font-size:20px; position:absolute; left:15px; top:12px; z-index:1; opacity:0.6;">🌊</span>';
+            cell.innerHTML = '<span style="font-size:20px; position:absolute; left:15px; top:12px; z-index:1; opacity:0.6;"></span>';
         } else if (ob.type === 'mountain') {
-            cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;">⛰️</span>';
+            cell.style.backgroundColor = '#5b4937';
+            cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;opacity:0.5;">⛰️</span>';
         }
     });
 
