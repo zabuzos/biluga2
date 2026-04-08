@@ -139,13 +139,25 @@ function generateRandomCities() {
 function generateLevelData() {
     const cities = generateRandomCities();
     const obstacles = [];
+    
+    // Рандомимо максимальний відсоток води для цієї конкретної карти (від 0 до 15%)
+    const waterChance = Math.random() * 0.15; 
+    // Рандомимо відсоток гір (від 0 до 10%)
+    const mountainChance = Math.random() * 0.10;
+
     for (let y = 0; y < 10; y++) {
         for (let x = 0; x < 18; x++) {
+            // Пропускаємо клітинки, де стоять міста
             if (cities.some(c => c.x === x && c.y === y)) continue;
+
             let rand = Math.random();
-            if (rand < 0.15) { // 15% вода
+            
+            // Якщо випадкове число менше за наш випадковий шанс води
+            if (rand < waterChance) { 
                 obstacles.push({x, y, type: 'water'});
-            } else if (rand < 0.22) { // 7% гора
+            } 
+            // Якщо воно потрапляє в наступний діапазон — ставимо гору
+            else if (rand < waterChance + mountainChance) { 
                 obstacles.push({x, y, type: 'mountain'});
             }
         }
