@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beluga 3 Multiplayer v2 </title>
+
+<style>
+body {font-family: Arial;background:#f0f0f0;display:flex;justify-content:center;gap:20px;flex-wrap: wrap;}
+#grid {display:grid;grid-template-columns: repeat(18, 60px);} 
+.cell {
+  width:60px;
+  height:60px;
+  border:1px solid rgba(0,0,0,0.1);
+  position:relative;
+
+  background-image: url('img/ground.png');
+  background-size: cover;
+  background-repeat: repeat;
+
+  opacity: 0.9; /* напівпрозорість */
+}
+  /* Основні панелі залишаються 220px на ПК */
+.panel {
+  width: 220px;
+}
+
+/* Мобільні стилі */
+@media (max-width: 768px) {
+  .panel {
+    width: 95%;                 /* на всю ширину майже */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 блоки в ряд */
+    gap: 10px;                   /* мінімальний відступ */
+    margin-bottom: 10px;
+  }
+}
+
+  /* === MOBILE OPTIMIZATION + BONUS SCROLL === */
+/* === MOBILE FULL WIDTH === */
+#gridWrapper {
+  overflow: auto;
+  max-width: 100vw;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+   #gridWrapper {
+    transform: scale(1);  /* трохи менше */
+    width: 100vw;
+  }
+#leftPanel {
+  width: 100%}
+  #rightPanel {
+  width: 100%}
+
+
+ #grid {
+    grid-template-columns: repeat(18, 40px); /* менші клітинки на телефоні */
+  }
+  .cell {
+    width: 40px;
+    height: 40px;  /* квадратні */
+  }
+
+  body {
+    flex-direction: column;
+    align-items: center;
+  }
+
+
+}
+  /* === MOBILE SHOP GRID 3 COLUMNS === */
+@media (max-width: 768px) {
+
+  .shopCard {
+    width: 100%; /* кожна картка займає всю долю колонки */
+    margin: 0;
+  }
+
+  .shopImg {
+    height: 80px; /* трохи менше для мобільних */
+  }
+
+  .title, .stats, .price, .buyBtn {
+    font-size: 12px; /* зменшимо шрифт на мобільному */
+  }
+
+  .buyBtn {
+    padding: 6px;
+  }
+}
+  
+  .divider {
+  border-right: 4px dashed black !important;
+}
+  #logo {
+  max-width: 230px;
+  height: auto;
+  margin-bottom: 10px;
+    align: center;
+}
+  .hitFlash {
+  animation: hitFlashAnim 0.2s ease;
+}
+
+@keyframes hitFlashAnim {
+  0% { background: rgba(255,0,0,0.7); }
+  100% { background: transparent; }
+}
+/*.p1 { background:#d0f0ff; } .p2 { background:#ffd0d0; }*/
+.move { background:rgba(0,255,0,0.3); } .future { background:rgba(255,255,0,0.3); }
+.attackBorder {
+  outline:3px solid red;
+  cursor: pointer;
+}
+
+.attackBorder:hover {
+  cursor: url('data:image/svg+xml;utf8,\
+  <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">\
+  <text y=\"24\" font-size=\"24\">⚔️</text>\
+  </svg>') 0 24, auto;
+}
+.city { background:gold; } .selected { outline:3px solid black; }
+.unitImg {width:100%;height:100%;object-fit:contain;border-radius:6px;}
+.unitP1 { outline:3px solid #2196F3; } .unitP2 { outline:3px solid #f44336; }
+.hp {position:absolute;bottom:2px;right:2px;font-size:12px;color:white;background:rgba(0,0,0,0.6);padding:2px;}
+.mp {position:absolute;top:2px;left:2px;font-size:11px;background:white;padding:1px 3px;border-radius:4px;}
+.panel { width:220px; }
+.card {background:white;padding:10px;margin-bottom:12px;border-radius:10px;}
+.shopCard { text-align:center; }
+.shopImg {width:100%;height:110px;object-fit:contain;margin:6px 0;}
+.title {font-weight:bold;margin-bottom:4px;} .stats {font-size:14px;margin-bottom:4px;} .price {font-weight:bold;margin-bottom:6px;}
+.buyBtn {background: linear-gradient(180deg, #4CAF50, #2e7d32);border: none;border-radius: 8px;padding: 8px;color: white;font-weight: bold;cursor: pointer;width:100%;}
+.buyBtn:hover { transform: scale(1.05); }
+.buyBtn:active { transform: scale(0.95); }
+.buyBtn:disabled {background: #999;cursor: not-allowed;}
+#menu {width: 100%;text-align: center;margin-bottom: 10px;}
+#turnPanel {text-align: center;margin-bottom: 10px;}
+</style>
+</head>
+
+<body>
+<div><img src="img/logo.png" id="logo"></div>
+<div id="menu">
+  
+  <input type="text" id="roomInput" placeholder="Назва кімнати" />
+  <select id="playerSelect">
+    <option value="1">Гравець 1</option>
+    <option value="2">Гравець 2</option>
+  </select>
+  <button id="joinBtn">Приєднатися</button>
+</div>
+
+<div class="panel" id="leftPanel"></div>
+
+<div>
+  <div id="turnPanel">
+    <h3>
+      Хід: <span id="turn"></span> |
+      Гравець: <span id="player"></span><br>
+      💰 P1: <span id="money1"></span> |
+      P2: <span id="money2"></span>
+    </h3>
+  </div>
+
+ <div id="gridWrapper">
+  <div id="grid"></div>
+</div>
+  <button onclick="endTurn()" class="buyBtn" id="endTurnBtn">Закінчити хід</button>
+  <button onclick="resetState()" class="buyBtn" style="margin-top:10px;">Нова гра</button>
+</div>
+
+<div class="panel" id="rightPanel"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBM6L4pO6cCkCX6mhChNG0-5RxKYOIV1fY",
+  authDomain: "beluga-a7197.firebaseapp.com",
+  databaseURL: "https://beluga-a7197-default-rtdb.firebaseio.com",
+  projectId: "beluga-a7197",
+  storageBucket: "beluga-a7197.appspot.com",
+  messagingSenderId: "1019986290981",
+  appId: "1:1019986290981:web:1a0685a543fa63e5a152cc"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const width = 18;
+const height = 10;
+
+let currentPlayer = 1; // чий хід
+let playerId = 1; // хто ти
+
+let turn = 1;
+let selectedUnit = null;
+let buyMode = null;
+let room = "";
+
+function fm(n){ return (n/1000)+'к'; }
+
+const unitTypes = {
+  shooter:{name:"Стрілець", speed:1, atk:15, hp:50, range:3, price:50000,img1:"img/shooter_p1.png",img2:"img/shooter_p2.png"},
+  infantry:{name:"Піхота", speed:3, atk:20, hp:50, range:1, price:40000,img1:"img/infantry_p1.png",img2:"img/infantry_p2.png"},
+  cavalry:{name:"Кавалерія", speed:4, atk:20, hp:55, range:1, price:120000,img1:"img/cavalry_p1.png",img2:"img/cavalry_p2.png"}
+};
+
+let state = { units:[], money:{1:500000,2:500000}, cities:[{x:1,y:4},{x:1,y:5},{x:16,y:4},{x:16,y:5}] };
+
+function createGrid(){
+  let g=document.getElementById('grid'); g.innerHTML='';
+  for(let y=0;y<height;y++){
+    for(let x=0;x<width;x++){
+      let d=document.createElement('div');
+      d.className='cell';
+
+if(x === 8){
+  d.classList.add('divider');
+}
+      d.dataset.x=x;
+      d.dataset.y=y;
+      d.onclick=()=>cellClick(x,y);
+      g.appendChild(d);
+    }
+  }
+}
+
+function getCell(x,y){ return document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`); }
+
+function render(){
+  turnEl.innerText=turn;
+  playerEl.innerText=currentPlayer;
+  money1.innerText=fm(state.money[1]);
+  money2.innerText=fm(state.money[2]);
+document.getElementById('endTurnBtn').disabled = currentPlayer !== playerId;
+  document.querySelectorAll('.cell').forEach(c=>{ c.innerHTML=''; c.classList.remove('move','future','attackBorder','selected','city'); });
+
+  state.cities.forEach(c=>{
+    let cell=getCell(c.x,c.y); cell.classList.add('city');
+    let icon=document.createElement('div'); icon.innerText="🏰";
+    icon.style.position="absolute"; icon.style.top="50%"; icon.style.left="50%";
+    icon.style.transform="translate(-50%,-50%)"; icon.style.fontSize="26px";
+    cell.appendChild(icon);
+  });
+
+  state.units.forEach(u=>{
+    let cell=getCell(u.x,u.y);
+    let img=document.createElement('img');
+    img.src = u.owner===1 ? unitTypes[u.type].img1 : unitTypes[u.type].img2;
+    img.className='unitImg '+(u.owner===1?'unitP1':'unitP2');
+    cell.appendChild(img);
+    let hp=document.createElement('div'); hp.className='hp'; hp.innerText=u.hp; cell.appendChild(hp);
+    let mp=document.createElement('div'); mp.className='mp'; mp.innerText=u.movePoints; cell.appendChild(mp);
+    if(u===selectedUnit) cell.classList.add('selected');
+  });
+
+  if(selectedUnit){ highlightMoves(selectedUnit); highlightAttacks(selectedUnit); }
+  renderPanels();
+}
+
+function renderPanels(){
+  let html1='', html2='';
+  Object.keys(unitTypes).forEach(k=>{
+    let u = unitTypes[k];
+    html1+=`<div class='card shopCard'><div class="title">${u.name}</div>
+      <img src="${u.img1}" class="shopImg">
+      <div class="stats">🏃 ${u.speed} ⚔️ ${u.atk} ❤️ ${u.hp} 🎯 ${u.range}</div>
+      <div class="price">💰 ${fm(u.price)}</div>
+      <button class="buyBtn" onclick="startBuy('${k}',1)" ${currentPlayer!==1?'disabled':''}>Купити</button></div>`;
+    html2+=`<div class='card shopCard'><div class="title">${u.name}</div>
+      <img src="${u.img2}" class="shopImg">
+      <div class="stats">🏃 ${u.speed} ⚔️ ${u.atk} ❤️ ${u.hp} 🎯 ${u.range}</div>
+      <div class="price">💰 ${fm(u.price)}</div>
+      <button class="buyBtn" onclick="startBuy('${k}',2)" ${currentPlayer!==2?'disabled':''}>Купити</button></div>`;
+  });
+  leftPanel.innerHTML=html1; rightPanel.innerHTML=html2;
+}
+
+// ===== FIXED BUY LOGIC =====
+// ВАЖЛИВО: робимо функції глобальними для onclick
+window.startBuy = function(type, player){
+  if(player !== playerId) return;
+  buyMode = type;
+};
+
+window.endTurn = endTurn;
+window.resetState = resetState;
+function startBuy(type, player){
+  if(player !== playerId) return; // тепер перевірка хто ти
+  buyMode = type;
+}
+
+function isOwnSide(x){ return playerId===1?x<9:x>=9; }
+
+function cellClick(x,y){
+
+  // ❗ блокуємо якщо не твій хід
+  if(currentPlayer !== playerId) return;
+
+  let unit = state.units.find(u=>u.x===x&&u.y===y);
+
+  if(buyMode){
+    if(unit || !isOwnSide(x)) return;
+
+    let u = unitTypes[buyMode];
+    if(state.money[playerId] < u.price) return;
+
+    state.money[playerId] -= u.price;
+    state.units.push({
+      x,y,
+      owner:playerId,
+      type:buyMode,
+      hp:u.hp,
+      movePoints:0,
+      attacked:true
+    });
+
+    buyMode = null;
+    saveState();
+    render();
+    return;
+  }
+
+  // ✅ вибір тільки своїх юнітів
+  if(unit && unit.owner === playerId){
+    selectedUnit = unit;
+    render();
+    return;
+  }
+
+  // ✅ атака тільки ворога
+  if(unit && unit.owner !== playerId && selectedUnit && !selectedUnit.attacked){
+    attackUnit(selectedUnit, unit);
+    saveState();
+    render();
+    return;
+  }
+
+  // рух
+  if(selectedUnit && selectedUnit.movePoints > 0){
+    if(state.units.some(u=>u.x===x && u.y===y)) return;
+    moveUnit(selectedUnit, x, y);
+    saveState();
+    render();
+  }
+}
+
+
+
+function moveUnit(u,x,y){
+  let dx=Math.abs(u.x-x); let dy=Math.abs(u.y-y); let dist=Math.max(dx,dy);
+  if(dist<=u.movePoints){ u.movePoints-=dist; u.x=x; u.y=y; }
+}
+
+function attackUnit(a,d){
+  let t=unitTypes[a.type];
+  let dx=Math.abs(a.x-d.x); let dy=Math.abs(a.y-d.y);
+
+  if(Math.max(dx,dy)<=t.range){
+
+    // 🔴 ефект удару
+    let cell = getCell(d.x,d.y);
+    cell.classList.add('hitFlash');
+    setTimeout(()=>cell.classList.remove('hitFlash'), 200);
+
+    d.hp-=t.atk;
+    a.attacked=true;
+
+    if(d.hp<=0){
+      state.units = state.units.filter(u=>u!==d);
+    }
+  }
+}
+
+function highlightMoves(u){ let s=u.movePoints;
+  for(let dx=-s;dx<=s;dx++){ for(let dy=-s;dy<=s;dy++){
+    let nx=u.x+dx, ny=u.y+dy;
+    if(nx>=0 && ny>=0 && nx<width && ny<height && Math.max(Math.abs(dx),Math.abs(dy))<=s){
+      let cell=getCell(nx,ny);
+      if(u.movePoints>0) cell.classList.add('move'); else cell.classList.add('future');
+    }
+  }}
+}
+
+function highlightAttacks(u){ let r=unitTypes[u.type].range;
+  state.units.forEach(e=>{ if(e.owner!==currentPlayer && !u.attacked){
+    let dx=Math.abs(e.x-u.x), dy=Math.abs(e.y-u.y);
+    if(Math.max(dx,dy)<=r){ getCell(e.x,e.y).classList.add('attackBorder'); }
+  }});
+}
+
+function endTurn(){ currentPlayer=currentPlayer===1?2:1; if(currentPlayer===1) turn++;
+  state.money[currentPlayer]+=100000;
+  state.units.forEach(u=>{ if(u.owner===currentPlayer){ u.movePoints=unitTypes[u.type].speed; u.attacked=false; }});
+  selectedUnit=null; saveState(); render();
+}
+
+function saveState(){ if(!room) return; set(ref(db,'games/'+room),{state,turn,currentPlayer}); }
+function loadState(){ if(!room) return; onValue(ref(db,'games/'+room),(snapshot)=>{ const data = snapshot.val(); if(!data) return;
+  state=data.state||state; turn=data.turn||1; currentPlayer=data.currentPlayer||1; render();
+}); }
+
+function resetState(){
+  state={units:[],money:{1:500000,2:500000},cities:[{x:1,y:4},{x:1,y:5},{x:16,y:4},{x:16,y:5}]};
+  turn=1; currentPlayer=1; saveState(); render();
+}
+
+// JOIN
+
+document.getElementById('joinBtn').addEventListener('click',()=>{
+  room = document.getElementById('roomInput').value.trim();
+  playerId = parseInt(document.getElementById('playerSelect').value);
+
+  createGrid();
+
+  get(ref(db,'games/'+room)).then(snapshot=>{
+    if(!snapshot.exists()){ resetState(); } 
+    else { const data=snapshot.val(); state=data.state||state; turn=data.turn||1; currentPlayer=data.currentPlayer||1; render(); }
+    loadState();
+  });
+});
+
+const turnEl=document.getElementById('turn');
+const playerEl=document.getElementById('player');
+const money1=document.getElementById('money1');
+const money2=document.getElementById('money2');
+
+createGrid();
+render();
+
+</script>
+</body>
+</html>
