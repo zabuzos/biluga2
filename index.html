@@ -97,49 +97,71 @@
 
         #menu { text-align: center; background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-        @media (max-width: 900px) {
-    /* Робимо ієрархію: Магазин 1 -> Поле -> Магазин 2 */
+       @media (max-width: 900px) {
+    /* Робимо колонку: Магазин 1 -> Поле -> Магазин 2 */
     .game-layout { 
-        flex-direction: column; 
-        align-items: center; 
+        flex-direction: column !important; 
+        align-items: center !important; 
+        gap: 5px !important;
     }
 
-    /* Магазини у ряд по 3 юніти */
+    /* Магазини: стають горизонтальними стрічками */
     .panel { 
         width: 100% !important; 
         display: flex !important; 
         flex-direction: row !important;
-        overflow-x: auto; 
-        gap: 10px; 
-        padding: 10px;
-        background: #eee;
+        overflow-x: auto !important; 
+        gap: 8px; 
+        padding: 5px;
+        background: #e0e0e0;
+        box-sizing: border-box;
     }
 
+    /* Картки в магазині: 3 штуки мають поміщатися в екран */
     .shopCard { 
-        min-width: calc(33.33% - 15px); /* Рівно 3 в ряд */
-        flex-shrink: 0;
+        min-width: 110px; 
+        margin-bottom: 0 !important; 
         padding: 5px !important;
+        flex-shrink: 0;
     }
 
-    .shopImg { height: 45px !important; }
+    .shopImg { height: 40px !important; }
 
-    /* ПРИМУСОВО 40px для клітинок на мобілках */
+    /* Поле: клітинка 35px та горизонтальна прокрутка */
+    #gridWrapper { 
+        width: 100vw; 
+        overflow-x: auto !important; 
+        -webkit-overflow-scrolling: touch;
+        border: 2px solid #fff;
+    }
+
     #grid { 
-        grid-template-columns: repeat(18, 40px) !important; 
+        grid-template-columns: repeat(18, 35px) !important; 
+        width: fit-content;
     }
 
     .cell { 
-        width: 40px !important; 
-        height: 40px !important; 
+        width: 35px !important; 
+        height: 35px !important; 
     }
 
-    /* Зменшуємо шрифти HP/MP для маленьких клітинок */
-    .hp, .mp { font-size: 8px !important; padding: 0 2px !important; }
+    /* Коригуємо розміри іконок під 35px */
+    .hp, .mp { font-size: 7px !important; padding: 0 1px !important; }
+    .unitImg { transform: scale(0.9); }
 
-    /* Порядок: панель 1 зверху, центр, панель 2 знизу */
-    #leftPanel { order: 1; }
-    .center-area { order: 2; width: 100%; }
-    #rightPanel { order: 3; }
+    /* ПОРЯДОК: Магазин P1 зверху, Поле посередині, Магазин P2 знизу */
+    #leftPanel { order: 1; } 
+    
+    /* Це вибирає центральний div з полем */
+    .game-layout > div:not(.panel) { 
+        order: 2; 
+        width: 100%; 
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #rightPanel { order: 3; } 
 }
     </style>
 </head>
