@@ -25,7 +25,38 @@
             width: 55px; height: 55px; border: 1px solid rgba(0,0,0,0.05); position: relative; 
             background-image: url('img/ground.png'); background-size: cover; cursor: pointer; 
         }
+/* Контейнер для всього ігрового процесу */
+.game-layout { 
+    display: flex; 
+    flex-direction: row; 
+    justify-content: center; 
+    align-items: flex-start;
+    gap: 15px; 
+    width: 100%; 
+}
 
+/* Обгортка поля для прокрутки */
+#gridWrapper { 
+    overflow-x: auto; 
+    background: #fff; 
+    border-radius: 12px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    -webkit-overflow-scrolling: touch; /* плавна прокрутка на iOS */
+}
+
+/* Поле за замовчуванням (ПК версія) */
+#grid { 
+    display: grid; 
+    grid-template-columns: repeat(18, 55px); /* На ПК 55px */
+    background: #ccc; 
+    width: fit-content;
+}
+
+.cell { 
+    width: 55px; height: 55px; 
+    position: relative; 
+    background-size: cover;
+}
         .divider { position: relative; }
         .divider::after {
             content: '';
