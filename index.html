@@ -645,61 +645,58 @@ function cellClick(x, y) {
                 owner: playerId, 
                 movePoints: 0, 
                 attacked: true, 
-                maxHp: Number(uD.hp) // Фіксуємо числом
+                maxHp: Number(uD.hp) 
             });
             buyMode = null; saveState(); render();
         }
         return;
     }
 
-    // 2. ВИБІР ВЛАСНОГО ЮНІТА
+    // 2. ПРІОРИТЕТ ДІЇ (АТАКА АБО ЛІКУВАННЯ)
+    // Якщо юніт вибраний і ми клацаємо на іншого юніта в радіусі дії
+    if(selectedUnit && unitAtCell && !selectedUnit.attacked) {
+        let dist = Math.max(Math.abs(selectedUnit.x - x), Math.abs(selectedUnit.y - y));
+        
+        if(dist <= selectedUnit.range && dist > 0) { // dist > 0 щоб не лікувати самого себе
+            if(selectedUnit.isHealer && unitAtCell.owner === playerId) {
+                // ЛОГІКА ЛІКАРЯ (спрацює при кліку на союзника)
+                let currentHp = Number(unitAtCell.hp);
+                let healPower = Number(selectedUnit.atk);
+                let max = Number(unitAtCell.maxHp || currentHp);
+
+                if(currentHp < max) {
+                    selectedUnit.attacked = true;
+                    let newHp = currentHp + healPower;
+                    unitAtCell.hp = newHp > max ? max : newHp;
+                    
+                    document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
+                    saveState();
+                    setTimeout(() => render(), 500);
+                    return; // Виходимо, щоб не спрацювало перемикання вибору
+                }
+            } else if(!selectedUnit.isHealer && unitAtCell.owner !== playerId) {
+                // ЛОГІКА БІЙЦЯ (спрацює при кліку на ворога)
+                selectedUnit.attacked = true;
+                unitAtCell.hp = Number(unitAtCell.hp) - Number(selectedUnit.atk);
+                
+                if(unitAtCell.hp <= 0) {
+                    state.units = state.units.filter(u => u !== unitAtCell);
+                }
+                document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
+                saveState();
+                setTimeout(() => render(), 500);
+                return; // Виходимо
+            }
+        }
+    }
+
+    // 3. ВИБІР ЮНІТА (якщо не відбулося лікування чи атаки)
     if(unitAtCell && unitAtCell.owner === playerId) { 
         selectedUnit = unitAtCell; 
         render(); 
         return; 
     }
     
-    // 3. ДІЯ: АТАКА АБО ЛІКУВАННЯ
-    if(unitAtCell && selectedUnit && !selectedUnit.attacked) {
-        let dist = Math.max(Math.abs(selectedUnit.x - x), Math.abs(selectedUnit.y - y));
-        
-        if(dist <= selectedUnit.range) {
-            if(selectedUnit.isHealer) {
-                // ЛОГІКА ЛІКАРЯ
-                if(unitAtCell.owner === playerId) {
-                    // Важливо: перетворюємо все в числа перед математикою
-                    let currentHp = Number(unitAtCell.hp);
-                    let healPower = Number(selectedUnit.atk);
-                    let max = Number(unitAtCell.maxHp || currentHp);
-
-                    if(currentHp < max) {
-                        selectedUnit.attacked = true;
-                        let newHp = currentHp + healPower;
-                        unitAtCell.hp = newHp > max ? max : newHp;
-                        
-                        document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-                        saveState();
-                        setTimeout(() => render(), 500);
-                    }
-                }
-            } else {
-                // ЛОГІКА БІЙЦЯ
-                if(unitAtCell.owner !== playerId) {
-                    selectedUnit.attacked = true;
-                    unitAtCell.hp = Number(unitAtCell.hp) - Number(selectedUnit.atk);
-                    
-                    if(unitAtCell.hp <= 0) {
-                        state.units = state.units.filter(u => u !== unitAtCell);
-                    }
-                    document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-                    saveState();
-                    setTimeout(() => render(), 500);
-                }
-            }
-            return;
-        }
-    }
-
     // 4. РУХ
     if(selectedUnit && selectedUnit.movePoints > 0 && !unitAtCell) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
