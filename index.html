@@ -114,18 +114,39 @@
     box-sizing: border-box;
 }
 
-/* Напівпрозора підкладка з характеристиками та назвою */
-.unit-overlay {
+.stats-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6); /* Трохи світліше, щоб не перекривати картинку надто сильно */
+    color: white;
+    padding: 6px 2px;
+    text-align: center;
+    font-size: 0.9em; /* Збільшено розмір шрифту */
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Нижня плашка тільки для назви */
+.name-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(0, 0, 0, 0.7); /* Чорний напівпрозорий */
+    background: rgba(0, 0, 0, 0.75);
     color: white;
-    padding: 4px;
+    padding: 5px;
     text-align: center;
-    pointer-events: none; /* Щоб не заважало клікам */
+    font-weight: bold;
+    font-size: 0.85em;
+    pointer-events: none;
+    z-index: 5;
 }
+
+/* Видаляємо старий .unit-overlay, бо він більше не потрібен */
+.unit-overlay { display: none; }
 
 .unit-overlay b { display: block; font-size: 0.9em; margin-bottom: 2px; }
 .unit-overlay div { font-size: 0.75em; letter-spacing: 0.5px; }
@@ -541,10 +562,14 @@ function renderShop() {
             html += `
                 <div class="card shopCard">
                     <div class="unit-preview">
+                        <div class="stats-overlay">
+                            ⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}
+                        </div>
+                        
                         <img src="${u.img}" class="shopImg">
-                        <div class="unit-overlay">
-                            <b>${u.name}</b>
-                            <div>⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div>
+                        
+                        <div class="name-overlay">
+                            ${u.name}
                         </div>
                     </div>
                     <button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer !== pNum || playerId !== pNum ? 'disabled' : ''}>
