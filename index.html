@@ -85,11 +85,66 @@
 
         .panel { width: 220px; flex-shrink: 0; }
         .card { background: white; padding: 12px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .shopCard { text-align: center; transition: transform 0.2s; }
-        .shopCard:hover { transform: translateY(-3px); }
-        .shopImg { width: 100%; height: 120px; object-fit: contain; margin: 8px 0; }
-        .buyBtn { width: 100%; padding: 10px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; font-weight: bold; }
-        .buyBtn:disabled { background: #ccc; cursor: not-allowed; }
+        /* Базова картка юніта */
+.shopCard { 
+    position: relative; 
+    padding: 0 !important; /* Прибираємо відступи, щоб фото було від краю до краю */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #ddd;
+    margin-bottom: 12px;
+}
+
+/* Контейнер для зображення */
+.unit-preview {
+    position: relative;
+    width: 100%;
+    height: 120px; /* Фіксована висота як ти просив */
+    background: #fdfdfd;
+}
+
+.shopImg { 
+    width: 100% !important; 
+    height: 100% !important; 
+    object-fit: contain; 
+    display: block;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+/* Напівпрозора підкладка з характеристиками та назвою */
+.unit-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6); /* Чорний напівпрозорий */
+    color: white;
+    padding: 4px;
+    text-align: center;
+    pointer-events: none; /* Щоб не заважало клікам */
+}
+
+.unit-overlay b { display: block; font-size: 0.9em; margin-bottom: 2px; }
+.unit-overlay div { font-size: 0.75em; letter-spacing: 0.5px; }
+
+/* Кнопка з ціною всередині */
+.buyBtn { 
+    width: 100%; 
+    padding: 10px; 
+    cursor: pointer; 
+    border: none; 
+    border-radius: 0; /* Рівна кнопка внизу картки */
+    background: #4CAF50; 
+    color: white; 
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.buyBtn:disabled { background: #ccc; cursor: not-allowed; }
+.buyBtn:hover:not(:disabled) { background: #45a049; }
 
         .race-editor { background: white; padding: 25px; border-radius: 15px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .unit-form { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: #fafafa; }
@@ -474,17 +529,34 @@ function render() {
 }
 
 function renderShop() {
-    const lP = document.getElementById('leftPanel'); const rP = document.getElementById('rightPanel');
+    const lP = document.getElementById('leftPanel'); 
+    const rP = document.getElementById('rightPanel');
     const p1R = (state.playerRaces && state.playerRaces[1]) ? state.playerRaces[1] : defaultRace;
     const p2R = (state.playerRaces && state.playerRaces[2]) ? state.playerRaces[2] : defaultRace;
+
     let buildShop = (race, pNum) => {
         let html = `<div style="text-align:center; padding:8px; background:${pNum===1?'#2196F3':'#f44336'}; color:white; border-radius:8px; margin-bottom:10px;"><b>${race.name}</b></div>`;
+        
         (race.units || []).forEach(u => {
-            html += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==pNum||playerId!==pNum?'disabled':''}>Купити</button></div>`;
+            html += `
+                <div class="card shopCard">
+                    <div class="unit-preview">
+                        <img src="${u.img}" class="shopImg">
+                        <div class="unit-overlay">
+                            <b>${u.name}</b>
+                            <div>⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div>
+                        </div>
+                    </div>
+                    <button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer !== pNum || playerId !== pNum ? 'disabled' : ''}>
+                        Купити за ${u.price/1000}к 💰
+                    </button>
+                </div>`;
         });
         return html;
     };
-    lP.innerHTML = buildShop(p1R, 1); rP.innerHTML = buildShop(p2R, 2);
+
+    lP.innerHTML = buildShop(p1R, 1); 
+    rP.innerHTML = buildShop(p2R, 2);
 }
 
 window.startBuy = (id) => { buyMode = id; };
