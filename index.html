@@ -105,6 +105,63 @@
         gap: 5px !important;
     }
 
+           /* Оновлена картка в магазині */
+.shopCard { 
+    position: relative; 
+    overflow: hidden; 
+    padding: 0 !important; /* Прибираємо внутрішні відступи, щоб фото було на всю ширину */
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+}
+
+/* Контейнер для фото та імені */
+.unit-preview {
+    position: relative;
+    width: 100%;
+    background: #f9f9f9;
+}
+
+.shopImg { 
+    width: 100% !important; 
+    height: 120px !important; /* Збільшене фото для ПК */
+    object-fit: contain; 
+    display: block;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+/* Напівпрозора підкладка для імені */
+.unit-name-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6); /* Чорний напівпрозорий */
+    color: white !important;
+    padding: 5px;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Блок з характеристиками під фото */
+.shop-stats {
+    padding: 8px;
+    font-size: 0.8em;
+    background: white;
+}
+
+.buyBtn {
+    border-radius: 0 !important; /* Кнопка на всю ширину знизу без закруглень */
+}
+
+/* Налаштування для мобілок */
+@media (max-width: 900px) {
+    .shopImg { height: 80px !important; } /* Трохи менше на мобілці, але все одно велике */
+    .unit-name-overlay { font-size: 10px !important; padding: 3px !important; }
+}
+
     /* Магазини: стають горизонтальними стрічками */
     .panel { 
         width: 100% !important; 
@@ -474,19 +531,42 @@ function render() {
 }
 
 function renderShop() {
-    const lP = document.getElementById('leftPanel'); const rP = document.getElementById('rightPanel');
+    const lP = document.getElementById('leftPanel'); 
+    const rP = document.getElementById('rightPanel');
     const p1R = (state.playerRaces && state.playerRaces[1]) ? state.playerRaces[1] : defaultRace;
     const p2R = (state.playerRaces && state.playerRaces[2]) ? state.playerRaces[2] : defaultRace;
+
     let buildShop = (race, pNum) => {
-        let html = `<div style="text-align:center; padding:8px; background:${pNum===1?'#2196F3':'#f44336'}; color:white; border-radius:8px; margin-bottom:10px;"><b>${race.name}</b></div>`;
+        // Шапка магазину
+        let html = `<div style="text-align:center; padding:8px; background:${pNum===1?'#2196F3':'#f44336'}; color:white; font-weight:bold; font-size: 13px;">${race.name}</div>`;
+        
         (race.units || []).forEach(u => {
-            html += `<div class="card shopCard"><b>${u.name}</b><img src="${u.img}" class="shopImg"><div style="font-size:0.8em;">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div><b>💰${u.price/1000}к</b><button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer!==pNum||playerId!==pNum?'disabled':''}>Купити</button></div>`;
+            html += `
+                <div class="card shopCard">
+                    <div class="img-container">
+                        <img src="${u.img}" class="shopImg">
+                        <div class="unit-overlay-name">${u.name}</div>
+                    </div>
+                    
+                    <div class="unit-info-block">
+                        <div class="unit-stats">⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}</div>
+                        <div style="font-size: 12px; font-weight: bold;">💰${u.price/1000}к</div>
+                    </div>
+
+                    <button class="buyBtn" 
+                            onclick="startBuy('${u.id}')" 
+                            ${currentPlayer !== pNum || playerId !== pNum ? 'disabled' : ''} 
+                            style="border-radius:0; padding: 6px; font-size: 11px;">
+                        Купити
+                    </button>
+                </div>`;
         });
         return html;
     };
-    lP.innerHTML = buildShop(p1R, 1); rP.innerHTML = buildShop(p2R, 2);
-}
 
+    lP.innerHTML = buildShop(p1R, 1); 
+    rP.innerHTML = buildShop(p2R, 2);
+}
 window.startBuy = (id) => { buyMode = id; };
 
 function cellClick(x, y) {
