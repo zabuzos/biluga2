@@ -502,43 +502,6 @@
 </div>
 
 <script type="module">
-function generateRandomCities() {
-    let p1_x1 = Math.floor(Math.random() * 2); 
-    let p1_y1 = Math.floor(Math.random() * 4); 
-    let p1_x2 = Math.floor(Math.random() * 2);
-    let p1_y2 = 6 + Math.floor(Math.random() * 4); 
-
-    let p2_x1 = 16 + Math.floor(Math.random() * 2);
-    let p2_y1 = Math.floor(Math.random() * 4);
-    let p2_x2 = 16 + Math.floor(Math.random() * 2);
-    let p2_y2 = 6 + Math.floor(Math.random() * 4);
-
-    return [
-        {x: p1_x1, y: p1_y1}, {x: p1_x2, y: p1_y2}, 
-        {x: p2_x1, y: p2_y1}, {x: p2_x2, y: p2_y2}
-    ];
-}
-
-function generateLevelData() {
-    const cities = generateRandomCities();
-    const obstacles = [];
-    const waterChance = Math.random() * 0.15; 
-    const mountainChance = Math.random() * 0.10;
-
-    for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 18; x++) {
-            if (cities.some(c => c.x === x && c.y === y)) continue;
-            let rand = Math.random();
-            if (rand < waterChance) { 
-                obstacles.push({x, y, type: 'water'});
-            } else if (rand < waterChance + mountainChance) { 
-                obstacles.push({x, y, type: 'mountain'});
-            }
-        }
-    }
-    return { cities, obstacles };
-}
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
@@ -552,6 +515,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// Стан гри
 let state = { units: [], money: {1: 500000, 2: 500000}, cities: [], obstacles: [], playerRaces: { 1: null, 2: null } };
 let currentPlayer = 1, playerId = 1, turn = 1, room = "", selectedUnit = null, buyMode = null;
 
@@ -564,47 +528,9 @@ let myRaces = [defaultRace];
 let currentSyncKey = localStorage.getItem('familySyncKey') || "";
 if(currentSyncKey) document.getElementById('syncKey').value = currentSyncKey;
 
-window.loadCloudRaces = () => {
-    const key = document.getElementById('syncKey').value.trim();
-    if(!key) return alert("Введіть ключ!");
-    currentSyncKey = key;
-    localStorage.setItem('familySyncKey', key);
-    onValue(ref(db, 'cloud_races/' + key), (snap) => {
-        if(snap.exists()) myRaces = snap.val();
-        renderEditor(); updateRaceSelect();
-    });
-};
+// --- ФУНКЦІЇ РЕДАКТОРА (WINDOW ДЛЯ ДОСТУПУ З HTML) ---
 
-function saveRacesToCloud() { if(currentSyncKey) set(ref(db, 'cloud_races/' + currentSyncKey), myRaces); }
-window.addNewRace = () => { 
-    let n = prompt("Назва нової раси:"); 
-    if(n) { 
-        if (!myRaces) myRaces = [];
-        myRaces.push({ name: n, units: [] }); 
-        saveRacesToCloud(); 
-    } 
-};
-window.deleteRace = (i) => { if(confirm("Видалити?")) { myRaces.splice(i, 1); saveRacesToCloud(); } };
-window.addUnitToRace = (rI) => { 
-    if (!myRaces[rI]) return;
-    if (!myRaces[rI].units) myRaces[rI].units = [];
-    myRaces[rI].units.push({ 
-        id: 'u' + Date.now(), name: "Новий воїн", speed: 2, atk: 10, hp: 40, range: 1, price: 30000, 
-        img: "https://cdn-icons-png.flaticon.com/512/2042/2042878.png" 
-    }); 
-    saveRacesToCloud(); 
-};
-// Оновлена функція updateUnit (щоб розуміла галочки)
-window.updateUnit = (rI, uI, f, v) => { 
-    // Якщо це поле isHealer, записуємо булеве значення, інакше як раніше
-    myRaces[rI].units[uI][f] = (f === 'isHealer') ? v : ((f==='name'||f==='img') ? v : Number(v)); 
-    saveRacesToCloud(); 
-};
-
-
-window.deleteUnit = (rI, uI) => { myRaces[rI].units.splice(uI, 1); saveRacesToCloud(); };
-
-function renderEditor() {
+window.renderEditor = () => {
     const list = document.getElementById('racesList');
     if(!list) return;
     list.innerHTML = myRaces.map((race, rIdx) => `
@@ -614,41 +540,97 @@ function renderEditor() {
                     <span style="font-size: 1.2em;">📦</span>
                     <input type="text" value="${race.name}" 
                         style="font-weight: bold; font-size: 1.1em; border: 1px solid transparent; background: transparent; padding: 5px; width: 250px;"
-                        onchange="updateRaceName(${rIdx}, this.value)">
+                        onchange="window.updateRaceName(${rIdx}, this.value)">
                 </div>
-                <button class="delete-btn" onclick="deleteRace(${rIdx})">Видалити расу</button>
+                <button class="delete-btn" onclick="window.deleteRace(${rIdx})">Видалити расу</button>
             </div>
-           ${(race.units || []).map((unit, uIdx) => `
-    <div class="unit-form">
-        <div><small>Назва</small><input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
-        <div><small>❤️ HP</small><input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
-        <div><small>⚔️ Атака</small><input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
-        <div><small>🏃 Шв</small><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
-        <div><small>🎯 Дальн</small><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
-        <div><small>💰 Ціна</small><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
-        
-        <div class="healer-field">
-            <small>➕ Цілитель</small>
-            <input type="checkbox" ${unit.isHealer ? 'checked' : ''} 
-            onchange="updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)">
+            ${(race.units || []).map((unit, uIdx) => `
+                <div class="unit-form">
+                    <div><small>Назва</small><input type="text" value="${unit.name}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
+                    <div><small>❤️ HP</small><input type="number" value="${unit.hp}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
+                    <div><small>⚔️ Атака</small><input type="number" value="${unit.atk}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
+                    <div><small>🏃 Шв</small><input type="number" value="${unit.speed}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
+                    <div><small>🎯 Дальн</small><input type="number" value="${unit.range}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
+                    <div><small>💰 Ціна</small><input type="number" value="${unit.price}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
+                    <div class="healer-field">
+                        <small>➕ Цілитель</small>
+                        <input type="checkbox" ${unit.isHealer ? 'checked' : ''} onchange="window.updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)">
+                    </div>
+                    <div style="grid-column: span 2;"><small>🖼️ Картинка</small><input type="text" value="${unit.img}" onchange="window.updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="delete-btn" onclick="window.deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 35px;">🗑️</button>
+                    </div>
+                </div>
+            `).join('')}
+            <button onclick="window.addUnitToRace(${rIdx})" style="width:100%; padding:10px; background:#e3f2fd; color:#2196F3; border:1px dashed #2196F3; border-radius:8px; cursor:pointer; font-weight:bold;">+ Додати воїна</button>
         </div>
+    `).join('');
+};
 
-        <div style="grid-column: span 2;"><small>🖼️ Картинка</small><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
-        
-        <div style="display: flex; align-items: flex-end;">
-            <button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 35px;">🗑️</button>
-        </div>
-    </div>
-`).join('')}
+window.updateRaceName = (rI, val) => { myRaces[rI].name = val; window.saveRacesToCloud(); };
+window.updateUnit = (rI, uI, f, v) => { 
+    myRaces[rI].units[uI][f] = (f === 'isHealer') ? v : ((f==='name'||f==='img') ? v : Number(v)); 
+    window.saveRacesToCloud(); 
+};
+window.deleteRace = (i) => { if(confirm("Видалити расу?")) { myRaces.splice(i, 1); window.saveRacesToCloud(); } };
+window.deleteUnit = (rI, uI) => { myRaces[rI].units.splice(uI, 1); window.saveRacesToCloud(); };
+window.addUnitToRace = (rI) => {
+    if(!myRaces[rI].units) myRaces[rI].units = [];
+    myRaces[rI].units.push({ id: 'u'+Date.now(), name: "Новий воїн", speed: 2, atk: 10, hp: 40, range: 1, price: 30000, img: "https://cdn-icons-png.flaticon.com/512/2042/2042878.png" });
+    window.saveRacesToCloud();
+};
+window.addNewRace = () => { let n = prompt("Назва раси:"); if(n) { myRaces.push({name:n, units:[]}); window.saveRacesToCloud(); } };
+
+window.saveRacesToCloud = () => {
+    if(currentSyncKey) set(ref(db, 'cloud_races/' + currentSyncKey), myRaces);
+    window.renderEditor();
+    updateRaceSelect();
+};
+
+window.loadCloudRaces = () => {
+    const key = document.getElementById('syncKey').value.trim();
+    if(!key) return alert("Введіть ключ!");
+    currentSyncKey = key;
+    localStorage.setItem('familySyncKey', key);
+    onValue(ref(db, 'cloud_races/' + key), (snap) => {
+        if(snap.exists()) myRaces = snap.val();
+        window.renderEditor(); updateRaceSelect();
+    });
+};
+
+// --- ГРАФІКА ТА ГЕНЕРАЦІЯ ---
+
+function generateRandomCities() {
+    return [{x: Math.floor(Math.random()*2), y: Math.floor(Math.random()*4)}, {x: Math.floor(Math.random()*2), y: 6+Math.floor(Math.random()*4)},
+            {x: 16+Math.floor(Math.random()*2), y: Math.floor(Math.random()*4)}, {x: 16+Math.floor(Math.random()*2), y: 6+Math.floor(Math.random()*4)}];
+}
+
+function generateLevelData() {
+    const cities = generateRandomCities();
+    const obstacles = [];
+    for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 18; x++) {
+            if (cities.some(c => c.x === x && c.y === y)) continue;
+            let rand = Math.random();
+            if (rand < 0.1) obstacles.push({x, y, type: 'water'});
+            else if (rand < 0.18) obstacles.push({x, y, type: 'mountain'});
+        }
+    }
+    return { cities, obstacles };
+}
+
+// --- ІГРОВА ЛОГІКА ---
 
 window.switchTab = (tab) => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(tab + 'View').classList.add('active');
-    if(tab === 'editor' && currentSyncKey) loadCloudRaces();
 };
 
-function updateRaceSelect() { document.getElementById('raceSelect').innerHTML = myRaces.map((r, i) => `<option value="${i}">${r.name}</option>`).join(''); }
+function updateRaceSelect() {
+    const sel = document.getElementById('raceSelect');
+    if(sel) sel.innerHTML = myRaces.map((r, i) => `<option value="${i}">${r.name}</option>`).join('');
+}
 
 function createGrid() {
     let g = document.getElementById('grid'); g.innerHTML = '';
@@ -672,7 +654,6 @@ function render() {
     
     document.querySelectorAll('.cell').forEach(c => { 
         c.innerHTML = ''; 
-        // ДОДАНО 'healer-target' СЮДИ:
         c.classList.remove('move','selected','attackBorder', 'healer-target');
         c.style.backgroundColor = '';
         c.style.backgroundImage = "url('img/ground.png')";
@@ -681,19 +662,13 @@ function render() {
     (state.obstacles || []).forEach(ob => {
         let cell = document.querySelector(`.cell[data-x='${ob.x}'][data-y='${ob.y}']`);
         if (!cell) return;
-        if (ob.type === 'water') {
-            cell.style.backgroundColor = '#128cc3';
-            cell.style.backgroundImage = 'none';
-        } else if (ob.type === 'mountain') {
-            cell.style.backgroundColor = 'rgba(121, 85, 72, 0.5)';
-            cell.style.backgroundImage = 'none';
-            cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1; opacity:0.6;">⛰️</span>';
-        }
+        if (ob.type === 'water') { cell.style.backgroundColor = '#128cc3'; cell.style.backgroundImage = 'none'; }
+        else { cell.style.backgroundColor = 'rgba(121,85,72,0.5)'; cell.innerHTML = '⛰️'; cell.style.backgroundImage = 'none'; }
     });
 
     (state.cities || []).forEach(c => {
         let cell = document.querySelector(`.cell[data-x='${c.x}'][data-y='${c.y}']`);
-        if(cell) cell.innerHTML = '<span style="font-size:24px; position:absolute; left:12px; top:8px; z-index:1;">🏰</span>';
+        if(cell) cell.innerHTML = '<span style="font-size:24px; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);">🏰</span>';
     });
 
     (state.units || []).forEach(u => {
@@ -717,116 +692,65 @@ function renderShop() {
 
     let buildShop = (race, pNum) => {
         let html = `<div style="text-align:center; padding:8px; background:${pNum===1?'#2196F3':'#f44336'}; color:white; border-radius:8px; margin-bottom:10px;"><b>${race.name}</b></div>`;
-        
         (race.units || []).forEach(u => {
             html += `
                 <div class="card shopCard">
                     <div class="unit-preview">
-                        <div class="stats-overlay">
-    ${u.isHealer ? '➕' : '⚔️'}${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}
-</div>
-                        
+                        <div class="stats-overlay">${u.isHealer ? '➕' : '⚔️'}${u.atk} ❤️${u.hp} 🏃${u.speed}</div>
                         <img src="${u.img}" class="shopImg">
-                        
-                        <div class="name-overlay">
-                            ${u.name}
-                        </div>
+                        <div class="name-overlay">${u.name}</div>
                     </div>
-                    <button class="buyBtn" onclick="startBuy('${u.id}')" ${currentPlayer !== pNum || playerId !== pNum ? 'disabled' : ''}>
-                        Купити за ${u.price/1000}к 💰
-                    </button>
+                    <button class="buyBtn" onclick="window.startBuy('${u.id}')" ${currentPlayer !== pNum || playerId !== pNum ? 'disabled' : ''}>${u.price/1000}к 💰</button>
                 </div>`;
         });
         return html;
     };
-
-    lP.innerHTML = buildShop(p1R, 1); 
-    rP.innerHTML = buildShop(p2R, 2);
+    lP.innerHTML = buildShop(p1R, 1); rP.innerHTML = buildShop(p2R, 2);
 }
 
 window.startBuy = (id) => { buyMode = id; };
 
 function cellClick(x, y) {
     if(currentPlayer !== playerId) return;
-    if(!state.units) state.units = [];
-    
     let unitAtCell = state.units.find(u => u.x === x && u.y === y);
 
-    // 1. РЕЖИМ КУПІВЛІ
     if(buyMode) {
-        let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
-        let isCity = (state.cities || []).some(c => c.x === x && c.y === y);
-        if(unitAtCell || isObstacle || isCity || (playerId === 1 ? x > 8 : x < 9)) return;
-        
+        if(unitAtCell || (state.obstacles || []).some(o => o.x === x && o.y === y) || (playerId === 1 ? x > 8 : x < 9)) return;
         const myR = (state.playerRaces && state.playerRaces[playerId]) ? state.playerRaces[playerId] : defaultRace;
         const uD = myR.units.find(u => u.id === buyMode);
         if(uD && state.money[playerId] >= uD.price) {
             state.money[playerId] -= uD.price;
-            state.units.push({ 
-                ...uD, 
-                x, y, 
-                owner: playerId, 
-                movePoints: 0, 
-                attacked: true, 
-                maxHp: Number(uD.hp) 
-            });
+            state.units.push({...uD, x, y, owner: playerId, movePoints: 0, attacked: true, maxHp: Number(uD.hp)});
             buyMode = null; saveState(); render();
         }
         return;
     }
 
-    // 2. ПРІОРИТЕТ ДІЇ (АТАКА АБО ЛІКУВАННЯ)
-    // Якщо юніт вибраний і ми клацаємо на іншого юніта в радіусі дії
     if(selectedUnit && unitAtCell && !selectedUnit.attacked) {
         let dist = Math.max(Math.abs(selectedUnit.x - x), Math.abs(selectedUnit.y - y));
-        
-        if(dist <= selectedUnit.range && dist > 0) { // dist > 0 щоб не лікувати самого себе
+        if(dist <= selectedUnit.range && dist > 0) {
             if(selectedUnit.isHealer && unitAtCell.owner === playerId) {
-                // ЛОГІКА ЛІКАРЯ (спрацює при кліку на союзника)
-                let currentHp = Number(unitAtCell.hp);
-                let healPower = Number(selectedUnit.atk);
-                let max = Number(unitAtCell.maxHp || currentHp);
-
-                if(currentHp < max) {
+                let max = Number(unitAtCell.maxHp || unitAtCell.hp);
+                if(unitAtCell.hp < max) {
+                    unitAtCell.hp = Math.min(max, Number(unitAtCell.hp) + Number(selectedUnit.atk));
                     selectedUnit.attacked = true;
-                    let newHp = currentHp + healPower;
-                    unitAtCell.hp = newHp > max ? max : newHp;
-                    
-                    document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-                    saveState();
-                    setTimeout(() => render(), 500);
-                    return; // Виходимо, щоб не спрацювало перемикання вибору
+                    saveState(); render(); return;
                 }
             } else if(!selectedUnit.isHealer && unitAtCell.owner !== playerId) {
-                // ЛОГІКА БІЙЦЯ (спрацює при кліку на ворога)
+                unitAtCell.hp -= selectedUnit.atk;
                 selectedUnit.attacked = true;
-                unitAtCell.hp = Number(unitAtCell.hp) - Number(selectedUnit.atk);
-                
-                if(unitAtCell.hp <= 0) {
-                    state.units = state.units.filter(u => u !== unitAtCell);
-                }
-                document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-                saveState();
-                setTimeout(() => render(), 500);
-                return; // Виходимо
+                if(unitAtCell.hp <= 0) state.units = state.units.filter(u => u !== unitAtCell);
+                saveState(); render(); return;
             }
         }
     }
 
-    // 3. ВИБІР ЮНІТА (якщо не відбулося лікування чи атаки)
-    if(unitAtCell && unitAtCell.owner === playerId) { 
-        selectedUnit = unitAtCell; 
-        render(); 
-        return; 
-    }
+    if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
     
-    // 4. РУХ
     if(selectedUnit && selectedUnit.movePoints > 0 && !unitAtCell) {
-        let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
-        if(isObstacle) return;
         let d = Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y));
-        if(d <= selectedUnit.movePoints) { 
-            selectedUnit.x = x; selectedUnit.y = y; selectedUnit.movePoints -= d; 
+        if(d <= selectedUnit.movePoints && !(state.obstacles || []).some(o => o.x === x && o.y === y)) {
+            selectedUnit.x = x; selectedUnit.y = y; selectedUnit.movePoints -= d;
             saveState(); render();
         }
     }
@@ -834,97 +758,70 @@ function cellClick(x, y) {
 
 function highlightMoves(u) {
     if(!u || u.movePoints <= 0) return;
-    for(let x=0; x<18; x++) for(let y=0; y<10; y++) {
-        let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
-        if(!isObstacle && Math.max(Math.abs(u.x-x), Math.abs(u.y-y)) <= u.movePoints && !(state.units || []).some(un => un.x===x && un.y===y)) {
-            let c = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`); if(c) c.classList.add('move');
+    document.querySelectorAll('.cell').forEach(c => {
+        let x = parseInt(c.dataset.x), y = parseInt(c.dataset.y);
+        let d = Math.max(Math.abs(u.x-x), Math.abs(u.y-y));
+        if(d > 0 && d <= u.movePoints && !state.units.some(un => un.x===x && un.y===y) && !state.obstacles.some(o => o.x===x && o.y===y)) {
+            c.classList.add('move');
         }
-    }
+    });
 }
 
 function highlightAttacks(u) {
     if(!u || u.attacked) return;
-    (state.units || []).forEach(e => {
-        let isInRange = Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y)) <= u.range;
-        if(isInRange) {
+    state.units.forEach(e => {
+        let d = Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y));
+        if(d > 0 && d <= u.range) {
             let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`);
-            if(!c) return;
-
-            // Якщо цілитель — підсвічуємо своїх ЗЕЛЕНИМ і додаємо клас для плюсика
-            if(u.isHealer && e.owner === u.owner && e !== u) {
-                c.classList.add('attackBorder', 'healer-target'); 
-            } 
-            // Якщо боєць — підсвічуємо ворогів ЧЕРВОНИМ (стандарт)
-            else if(!u.isHealer && e.owner !== u.owner) {
-                c.classList.add('attackBorder');
-            }
+            if(u.isHealer && e.owner === u.owner) c.classList.add('attackBorder', 'healer-target');
+            else if(!u.isHealer && e.owner !== u.owner) c.classList.add('attackBorder');
         }
     });
 }
 
-window.updateRaceName = (rI, newName) => {
-    if (!myRaces[rI]) return;
-    myRaces[rI].name = newName;
-    saveRacesToCloud();
-};
-
 window.endTurn = () => {
     state.money[currentPlayer] += 100000;
-    currentPlayer = (currentPlayer === 1) ? 2 : 1; 
+    currentPlayer = (currentPlayer === 1) ? 2 : 1;
     if (currentPlayer === 1) turn++;
-    (state.units || []).forEach(u => { 
-        if (u.owner === currentPlayer) { 
-            u.movePoints = u.speed; 
-            u.attacked = false; 
-        }
-    });
-    selectedUnit = null; 
-    saveState();
+    state.units.forEach(u => { if(u.owner === currentPlayer) { u.movePoints = u.speed; u.attacked = false; }});
+    selectedUnit = null; saveState();
 };
 
 window.saveState = () => { if(room) set(ref(db, 'games/'+room), {state, turn, currentPlayer}); };
 window.resetState = () => {
     const level = generateLevelData();
-    state.units = [];
-    state.money = {1: 500000, 2: 500000};
-    state.cities = level.cities;
-    state.obstacles = level.obstacles;
-    turn = 1; currentPlayer = 1;
-    saveState();
+    state = { units: [], money: {1: 500000, 2: 500000}, cities: level.cities, obstacles: level.obstacles, playerRaces: state.playerRaces };
+    turn = 1; currentPlayer = 1; saveState();
 };
 
 document.getElementById('joinBtn').onclick = () => {
     room = document.getElementById('roomInput').value.trim();
-    if(!room) return alert("Назва кімнати?");
+    if(!room) return alert("Введіть назву кімнати");
     playerId = parseInt(document.getElementById('playerSelect').value);
     const raceIdx = document.getElementById('raceSelect').value;
     const selectedRaceData = JSON.parse(JSON.stringify(myRaces[raceIdx]));
+    
     get(ref(db, 'games/'+room)).then(snap => {
         if(!snap.exists()) {
             const level = generateLevelData();
-            state = { 
-                units: [], money: {1: 500000, 2: 500000}, 
-                cities: level.cities, obstacles: level.obstacles,
-                playerRaces: { 1: null, 2: null } 
-            };
-            state.playerRaces[playerId] = selectedRaceData;
-            set(ref(db, 'games/' + room), { state, turn: 1, currentPlayer: 1 });
+            state = { units: [], money: {1: 500000, 2: 500000}, cities: level.cities, obstacles: level.obstacles, playerRaces: { 1: null, 2: null } };
         } else {
             state = snap.val().state;
-            if(!state.playerRaces) state.playerRaces = { 1: null, 2: null };
-            if(!state.units) state.units = [];
-            state.playerRaces[playerId] = selectedRaceData;
-            saveState();
         }
+        state.playerRaces[playerId] = selectedRaceData;
+        saveState();
         onValue(ref(db, 'games/'+room), (s) => {
-            let d = s.val(); if(d && d.state) { state = d.state; turn = d.turn; currentPlayer = d.currentPlayer; render(); }
+            let d = s.val(); if(d) { state = d.state; turn = d.turn; currentPlayer = d.currentPlayer; render(); }
         });
     });
 };
 
-createGrid(); 
-if(currentSyncKey) loadCloudRaces(); else { renderEditor(); updateRaceSelect(); }
+createGrid();
+if(currentSyncKey) window.loadCloudRaces();
+window.renderEditor();
+updateRaceSelect();
 render();
+
 </script>
 </body>
 </html>
