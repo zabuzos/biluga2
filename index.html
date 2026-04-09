@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beluga 3: Family Edition</title>
+    <title>Beluga 3</title>
 
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
@@ -112,7 +112,11 @@
     width: fit-content;
 }
 
-.cell
+.cell { 
+    width: 55px; height: 55px; 
+    position: relative; 
+    background-size: cover;
+}
         .divider { position: relative; }
         .divider::after {
             content: '';
@@ -302,15 +306,12 @@
 
            /* Центруємо емоджі гір та міст у маленьких клітинках */
     .cell span {
-    position: relative !important; /* Міняємо absolute на relative для роботи flex */
-    font-size: 28px;
-    z-index: 1;
-    line-height: 1;
-    pointer-events: none;
-    left: auto !important; /* Скидаємо старі налаштування */
-    top: auto !important;
-    transform: none !important;
-}
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important; /* Магія центрування */
+        font-size: 20px !important; /* Трохи зменшуємо, щоб емоджі не тиснули на краї */
+        margin: 0 !important;
+    }
 
     /* Коригуємо розміри іконок під 35px */
     .hp, .mp { font-size: 7px !important; padding: 0 1px !important; }
