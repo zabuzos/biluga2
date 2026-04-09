@@ -645,7 +645,7 @@ function cellClick(x, y) {
                 owner: playerId, 
                 movePoints: 0, 
                 attacked: true, 
-                maxHp: uD.hp // Важливо: зберігаємо початкове HP як ліміт лікування
+                maxHp: Number(uD.hp) // Фіксуємо числом
             });
             buyMode = null; saveState(); render();
         }
@@ -665,23 +665,29 @@ function cellClick(x, y) {
         
         if(dist <= selectedUnit.range) {
             if(selectedUnit.isHealer) {
-                // ЛОГІКА ЛІКАРЯ: лікуємо тільки своїх
+                // ЛОГІКА ЛІКАРЯ
                 if(unitAtCell.owner === playerId) {
-                    selectedUnit.attacked = true;
-                    unitAtCell.hp += selectedUnit.atk; // Використовуємо atk як силу лікування
-                    
-                    // Не дозволяємо лікувати понад максимум
-                    if(unitAtCell.hp > unitAtCell.maxHp) unitAtCell.hp = unitAtCell.maxHp;
-                    
-                    document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-                    saveState();
-                    setTimeout(() => render(), 500);
+                    // Важливо: перетворюємо все в числа перед математикою
+                    let currentHp = Number(unitAtCell.hp);
+                    let healPower = Number(selectedUnit.atk);
+                    let max = Number(unitAtCell.maxHp || currentHp);
+
+                    if(currentHp < max) {
+                        selectedUnit.attacked = true;
+                        let newHp = currentHp + healPower;
+                        unitAtCell.hp = newHp > max ? max : newHp;
+                        
+                        document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
+                        saveState();
+                        setTimeout(() => render(), 500);
+                    }
                 }
             } else {
-                // ЛОГІКА БІЙЦЯ: атакуємо тільки ворогів
+                // ЛОГІКА БІЙЦЯ
                 if(unitAtCell.owner !== playerId) {
                     selectedUnit.attacked = true;
-                    unitAtCell.hp -= selectedUnit.atk;
+                    unitAtCell.hp = Number(unitAtCell.hp) - Number(selectedUnit.atk);
+                    
                     if(unitAtCell.hp <= 0) {
                         state.units = state.units.filter(u => u !== unitAtCell);
                     }
