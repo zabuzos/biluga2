@@ -389,6 +389,65 @@
       
 .attackBorder.healer-target { outline: 3px solid #4CAF50 !important; }
 .attackBorder.healer-target:hover::after { content: '➕' !important; }
+
+        /* Покращена сітка форми юніта */
+.unit-form { 
+    border: 1px solid #eee; 
+    padding: 15px; 
+    margin: 15px 0; 
+    border-radius: 10px; 
+    display: grid; 
+    /* Фіксуємо 4 колонки на ПК для стабільності, або auto-fit */
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); 
+    gap: 12px; 
+    background: #fafafa; 
+}
+
+.unit-form div {
+    display: flex;
+    flex-direction: column;
+}
+
+.unit-form input[type="text"], 
+.unit-form input[type="number"] {
+    width: 100%;
+    height: 35px;
+    padding: 5px 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Спеціальний стиль для блоку з галочкою */
+.healer-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Центруємо галочку під написом */
+    justify-content: center;
+    background: #e8f5e9; /* Легкий зелений фон для виділення */
+    border-radius: 6px;
+    padding: 5px;
+    border: 1px solid #c8e6c9;
+}
+
+.healer-field input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+.healer-field small {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+/* Мобільна адаптація редактора */
+@media (max-width: 900px) {
+    .unit-form {
+        grid-template-columns: 1fr 1fr !important; /* 2 колонки на мобільних */
+    }
+}
     </style>
 </head>
 <body>
@@ -559,26 +618,28 @@ function renderEditor() {
                 </div>
                 <button class="delete-btn" onclick="deleteRace(${rIdx})">Видалити расу</button>
             </div>
-            ${(race.units || []).map((unit, uIdx) => `
-                <div class="unit-form">
-                    <div><small>Назва</small><br><input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
-                    <div><small>❤️ HP</small><br><input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
-                    <div><small>⚔️ Атака</small><br><input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
-                    <div><small>🏃 Шв</small><br><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
-                    <div><small>🎯 Дальн</small><br><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
-                    <div><small>💰 Ціна</small><br><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
-                    <div><small>➕ Цілитель</small><br>
-    <input type="checkbox" ${unit.isHealer ? 'checked' : ''} 
-    onchange="updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)"></div>
-                    <div style="grid-column: span 2;"><small>🖼️ Картинка</small><br><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
-                    
-                    <div style="display: flex; align-items: flex-end;"><button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 38px;">🗑️</button></div>
-                </div>
-            `).join('')}
-            <div style="margin-top: 10px;"><button onclick="addUnitToRace(${rIdx})" style="background:#2196F3; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight: bold; width: 100%;">+ Додати юніта</button></div>
+           ${(race.units || []).map((unit, uIdx) => `
+    <div class="unit-form">
+        <div><small>Назва</small><input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
+        <div><small>❤️ HP</small><input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
+        <div><small>⚔️ Атака</small><input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
+        <div><small>🏃 Шв</small><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
+        <div><small>🎯 Дальн</small><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
+        <div><small>💰 Ціна</small><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
+        
+        <div class="healer-field">
+            <small>➕ Цілитель</small>
+            <input type="checkbox" ${unit.isHealer ? 'checked' : ''} 
+            onchange="updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)">
         </div>
-    `).join('');
-}
+
+        <div style="grid-column: span 2;"><small>🖼️ Картинка</small><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
+        
+        <div style="display: flex; align-items: flex-end;">
+            <button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 35px;">🗑️</button>
+        </div>
+    </div>
+`).join('')}
 
 window.switchTab = (tab) => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
