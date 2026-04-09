@@ -8,8 +8,46 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         
-        #tabs { display: flex; gap: 10px; margin: 20px 0; z-index: 10; }
-        .tab-btn { padding: 12px 25px; cursor: pointer; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; transition: 0.3s; }
+       #tabs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Відступ між кнопками та лого */
+    padding: 10px;
+    background: #f4f7f9; /* Опціонально: фон для панелі вкладок */
+    border-bottom: 1px solid #ddd;
+}
+        .tab-btn {
+    /* Робимо кнопки однакової ширини */
+    width: 200px; 
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+        /* Стиль логотипу */
+.game-logo-pc {
+    display: none; /* Спочатку ховаємо для мобільних */
+    width: 262px;
+    height: 46px;
+    object-fit: contain;
+}
+
+/* Тільки для екранів більше 768 пікселів (ПК) */
+@media (min-width: 768px) {
+    .game-logo-pc {
+        display: block; /* Показуємо логотип */
+    }
+}
+
+/* Для мобільних пристроїв: щоб кнопки не злипалися, якщо лого зникне */
+@media (max-width: 767px) {
+    .tab-btn {
+        width: 45%; /* Кнопки займають майже половину екрана */
+    }
+}
         .tab-btn.active { background: #2196F3; color: white; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3); }
 
         .view { display: none; width: 98%; max-width: 1600px; animation: fadeIn 0.3s; }
@@ -334,6 +372,7 @@
 
 <div id="tabs">
     <button class="tab-btn active" onclick="switchTab('game')">🎮 Гра</button>
+    <img src="https://raw.githubusercontent.com/zabuzos/biluga2/refs/heads/main/img/logo-biluga.png" class="game-logo-pc" alt="Biluga 3">
     <button class="tab-btn" onclick="switchTab('editor')">🛠️ Редактор Рас</button>
 </div>
 
