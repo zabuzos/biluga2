@@ -77,7 +77,25 @@
         .move { background: rgba(76, 175, 80, 0.4); }
         .selected { outline: 3px solid #000; z-index: 5; }
         .attackBorder { outline: 3px solid #f44336; animation: blink 1s infinite; }
-        .attackBorder:hover::after { content: '⚔️'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 30px; z-index: 10; pointer-events: none; }
+        .attackBorder:hover::after { 
+    content: '⚔️'; 
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); /* Центрування по обох осях */
+    font-size: 30px; 
+    z-index: 10; 
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1; /* Прибирає зайве місце знизу емодзі */
+}
+
+/* Окремо для цілителя (ПК) */
+.attackBorder.healer-target:hover::after { 
+    content: '➕' !important; 
+}
 
         @keyframes hitEffect { 0% { transform: scale(1); filter: brightness(3); } 50% { transform: scale(1.3); filter: hue-rotate(90deg); } 100% { transform: scale(1); filter: brightness(1); } }
         .hit { animation: hitEffect 0.5s ease-out; z-index: 20; }
@@ -180,6 +198,10 @@
         align-items: center !important; 
         gap: 5px !important;
     }
+           .attackBorder:hover::after {
+        font-size: 22px !important; /* Зменшуємо іконку для маленької клітинки */
+    }
+
 
     /* Магазини: стають горизонтальними стрічками */
     .panel { 
@@ -527,7 +549,8 @@ function render() {
     
     document.querySelectorAll('.cell').forEach(c => { 
         c.innerHTML = ''; 
-        c.classList.remove('move','selected','attackBorder');
+        // ДОДАНО 'healer-target' СЮДИ:
+        c.classList.remove('move','selected','attackBorder', 'healer-target');
         c.style.backgroundColor = '';
         c.style.backgroundImage = "url('img/ground.png')";
     });
@@ -698,10 +721,16 @@ function highlightAttacks(u) {
     (state.units || []).forEach(e => {
         let isInRange = Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y)) <= u.range;
         if(isInRange) {
-            // Якщо цілитель — підсвічуємо своїх, якщо боєць — ворогів
-            if((u.isHealer && e.owner === u.owner && e !== u) || (!u.isHealer && e.owner !== u.owner)) {
-                let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`); 
-                if(c) c.classList.add('attackBorder');
+            let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`);
+            if(!c) return;
+
+            // Якщо цілитель — підсвічуємо своїх ЗЕЛЕНИМ і додаємо клас для плюсика
+            if(u.isHealer && e.owner === u.owner && e !== u) {
+                c.classList.add('attackBorder', 'healer-target'); 
+            } 
+            // Якщо боєць — підсвічуємо ворогів ЧЕРВОНИМ (стандарт)
+            else if(!u.isHealer && e.owner !== u.owner) {
+                c.classList.add('attackBorder');
             }
         }
     });
