@@ -303,6 +303,9 @@
         padding: 12px !important;
     }
 }
+      
+.attackBorder.healer-target { outline: 3px solid #4CAF50 !important; }
+.attackBorder.healer-target:hover::after { content: '➕' !important; }
     </style>
 </head>
 <body>
@@ -448,7 +451,14 @@ window.addUnitToRace = (rI) => {
     }); 
     saveRacesToCloud(); 
 };
-window.updateUnit = (rI, uI, f, v) => { myRaces[rI].units[uI][f] = (f==='name'||f==='img') ? v : Number(v); saveRacesToCloud(); };
+// Оновлена функція updateUnit (щоб розуміла галочки)
+window.updateUnit = (rI, uI, f, v) => { 
+    // Якщо це поле isHealer, записуємо булеве значення, інакше як раніше
+    myRaces[rI].units[uI][f] = (f === 'isHealer') ? v : ((f==='name'||f==='img') ? v : Number(v)); 
+    saveRacesToCloud(); 
+};
+
+
 window.deleteUnit = (rI, uI) => { myRaces[rI].units.splice(uI, 1); saveRacesToCloud(); };
 
 function renderEditor() {
@@ -473,7 +483,11 @@ function renderEditor() {
                     <div><small>🏃 Шв</small><br><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
                     <div><small>🎯 Дальн</small><br><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
                     <div><small>💰 Ціна</small><br><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
+                    <div><small>➕ Цілитель</small><br>
+    <input type="checkbox" ${unit.isHealer ? 'checked' : ''} 
+    onchange="updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)"></div>
                     <div style="grid-column: span 2;"><small>🖼️ Картинка</small><br><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
+                    
                     <div style="display: flex; align-items: flex-end;"><button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 38px;">🗑️</button></div>
                 </div>
             `).join('')}
@@ -563,8 +577,8 @@ function renderShop() {
                 <div class="card shopCard">
                     <div class="unit-preview">
                         <div class="stats-overlay">
-                            ⚔️${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}
-                        </div>
+    ${u.isHealer ? '➕' : '⚔️'}${u.atk} ❤️${u.hp} 🏃${u.speed} 🎯${u.range}
+</div>
                         
                         <img src="${u.img}" class="shopImg">
                         
@@ -592,6 +606,7 @@ function cellClick(x, y) {
     
     let unitAtCell = state.units.find(u => u.x === x && u.y === y);
 
+    // 1. РЕЖИМ КУПІВЛІ
     if(buyMode) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
         let isCity = (state.cities || []).some(c => c.x === x && c.y === y);
@@ -601,31 +616,62 @@ function cellClick(x, y) {
         const uD = myR.units.find(u => u.id === buyMode);
         if(uD && state.money[playerId] >= uD.price) {
             state.money[playerId] -= uD.price;
-            state.units.push({ ...uD, x, y, owner: playerId, movePoints: 0, attacked: true });
+            state.units.push({ 
+                ...uD, 
+                x, y, 
+                owner: playerId, 
+                movePoints: 0, 
+                attacked: true, 
+                maxHp: uD.hp // Важливо: зберігаємо початкове HP як ліміт лікування
+            });
             buyMode = null; saveState(); render();
         }
         return;
     }
 
-    if(unitAtCell && unitAtCell.owner === playerId) { selectedUnit = unitAtCell; render(); return; }
+    // 2. ВИБІР ВЛАСНОГО ЮНІТА
+    if(unitAtCell && unitAtCell.owner === playerId) { 
+        selectedUnit = unitAtCell; 
+        render(); 
+        return; 
+    }
     
-    // АТАКА
-    if(unitAtCell && unitAtCell.owner !== playerId && selectedUnit && !selectedUnit.attacked) {
-        if(Math.max(Math.abs(selectedUnit.x-x), Math.abs(selectedUnit.y-y)) <= selectedUnit.range) {
-            // ФІКС: Обов'язково позначаємо як атакований
-            selectedUnit.attacked = true; 
-            document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
-            unitAtCell.hp -= selectedUnit.atk;
-            if(unitAtCell.hp <= 0) {
-                state.units = state.units.filter(u => u !== unitAtCell);
+    // 3. ДІЯ: АТАКА АБО ЛІКУВАННЯ
+    if(unitAtCell && selectedUnit && !selectedUnit.attacked) {
+        let dist = Math.max(Math.abs(selectedUnit.x - x), Math.abs(selectedUnit.y - y));
+        
+        if(dist <= selectedUnit.range) {
+            if(selectedUnit.isHealer) {
+                // ЛОГІКА ЛІКАРЯ: лікуємо тільки своїх
+                if(unitAtCell.owner === playerId) {
+                    selectedUnit.attacked = true;
+                    unitAtCell.hp += selectedUnit.atk; // Використовуємо atk як силу лікування
+                    
+                    // Не дозволяємо лікувати понад максимум
+                    if(unitAtCell.hp > unitAtCell.maxHp) unitAtCell.hp = unitAtCell.maxHp;
+                    
+                    document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
+                    saveState();
+                    setTimeout(() => render(), 500);
+                }
+            } else {
+                // ЛОГІКА БІЙЦЯ: атакуємо тільки ворогів
+                if(unitAtCell.owner !== playerId) {
+                    selectedUnit.attacked = true;
+                    unitAtCell.hp -= selectedUnit.atk;
+                    if(unitAtCell.hp <= 0) {
+                        state.units = state.units.filter(u => u !== unitAtCell);
+                    }
+                    document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`).classList.add('hit');
+                    saveState();
+                    setTimeout(() => render(), 500);
+                }
             }
-            saveState(); // Зберігаємо негайно
-            setTimeout(() => render(), 500);
             return;
         }
     }
 
-    // РУХ
+    // 4. РУХ
     if(selectedUnit && selectedUnit.movePoints > 0 && !unitAtCell) {
         let isObstacle = (state.obstacles || []).some(ob => ob.x === x && ob.y === y);
         if(isObstacle) return;
@@ -650,8 +696,13 @@ function highlightMoves(u) {
 function highlightAttacks(u) {
     if(!u || u.attacked) return;
     (state.units || []).forEach(e => {
-        if(e.owner !== u.owner && Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y)) <= u.range) {
-            let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`); if(c) c.classList.add('attackBorder');
+        let isInRange = Math.max(Math.abs(u.x-e.x), Math.abs(u.y-e.y)) <= u.range;
+        if(isInRange) {
+            // Якщо цілитель — підсвічуємо своїх, якщо боєць — ворогів
+            if((u.isHealer && e.owner === u.owner && e !== u) || (!u.isHealer && e.owner !== u.owner)) {
+                let c = document.querySelector(`.cell[data-x='${e.x}'][data-y='${e.y}']`); 
+                if(c) c.classList.add('attackBorder');
+            }
         }
     });
 }
