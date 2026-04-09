@@ -247,6 +247,40 @@
 
         .race-editor { background: white; padding: 25px; border-radius: 15px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .unit-form { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: #fafafa; }
+        /* Контейнер для чекбокса цілителя */
+.healer-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #eef9ee; /* Легкий зелений фон, щоб виділити функцію */
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px inset #d0e0d0;
+    cursor: pointer;
+    user-select: none;
+    grid-column: span 1; /* Займає одну стандартну клітинку сітки */
+}
+
+.healer-checkbox-container input {
+    width: 18px !important;
+    height: 18px !important;
+    cursor: pointer;
+    margin: 0;
+}
+
+.healer-checkbox-container label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2e7d32;
+    cursor: pointer;
+}
+
+/* На мобільних пристроях розтягуємо на всю ширину, якщо потрібно */
+@media (max-width: 900px) {
+    .healer-checkbox-container {
+        grid-column: span 2 !important; /* На мобільних займає весь рядок (з двох колонок) */
+    }
+}
         .delete-btn { background: #ff5252; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 6px; }
 
         #menu { text-align: center; background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -558,26 +592,36 @@ function renderEditor() {
                 </div>
                 <button class="delete-btn" onclick="deleteRace(${rIdx})">Видалити расу</button>
             </div>
-            ${(race.units || []).map((unit, uIdx) => `
-                <div class="unit-form">
-                    <div><small>Назва</small><br><input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
-                    <div><small>❤️ HP</small><br><input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
-                    <div><small>⚔️ Атака</small><br><input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
-                    <div><small>🏃 Шв</small><br><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
-                    <div><small>🎯 Дальн</small><br><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
-                    <div><small>💰 Ціна</small><br><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
-                    <div><small>➕ Цілитель</small><br>
-    <input type="checkbox" ${unit.isHealer ? 'checked' : ''} 
-    onchange="updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)"></div>
-                    <div style="grid-column: span 2;"><small>🖼️ Картинка</small><br><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
-                    
-                    <div style="display: flex; align-items: flex-end;"><button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 38px;">🗑️</button></div>
-                </div>
-            `).join('')}
-            <div style="margin-top: 10px;"><button onclick="addUnitToRace(${rIdx})" style="background:#2196F3; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight: bold; width: 100%;">+ Додати юніта</button></div>
+          Щоб верстка не "пливла", нам потрібно зробити дві речі: змінити структуру HTML для чекбокса (щоб він не розтягував сусідні комірки) та додати кілька CSS правил.
+
+Ось фінальний, виправлений код для вашої функції renderEditor (шматок з мапою юнітів) та необхідні стилі.
+
+1. Оновлений JavaScript код
+Замініть свій цикл .map для юнітів на цей варіант. Я додав клас healer-box та трохи оптимізував структуру:
+
+JavaScript
+${(race.units || []).map((unit, uIdx) => `
+    <div class="unit-form">
+        <div><small>Назва</small><br><input type="text" value="${unit.name}" onchange="updateUnit(${rIdx}, ${uIdx}, 'name', this.value)"></div>
+        <div><small>❤️ HP</small><br><input type="number" value="${unit.hp}" onchange="updateUnit(${rIdx}, ${uIdx}, 'hp', this.value)"></div>
+        <div><small>⚔️ Атака</small><br><input type="number" value="${unit.atk}" onchange="updateUnit(${rIdx}, ${uIdx}, 'atk', this.value)"></div>
+        <div><small>🏃 Шв</small><br><input type="number" value="${unit.speed}" onchange="updateUnit(${rIdx}, ${uIdx}, 'speed', this.value)"></div>
+        <div><small>🎯 Дальн</small><br><input type="number" value="${unit.range}" onchange="updateUnit(${rIdx}, ${uIdx}, 'range', this.value)"></div>
+        <div><small>💰 Ціна</small><br><input type="number" value="${unit.price}" onchange="updateUnit(${rIdx}, ${uIdx}, 'price', this.value)"></div>
+        
+        <div class="healer-box">
+            <small>➕ Цілитель</small><br>
+            <input type="checkbox" ${unit.isHealer ? 'checked' : ''} 
+                   onchange="updateUnit(${rIdx}, ${uIdx}, 'isHealer', this.checked)">
         </div>
-    `).join('');
-}
+
+        <div style="grid-column: span 2;"><small>🖼️ Картинка</small><br><input type="text" value="${unit.img}" onchange="updateUnit(${rIdx}, ${uIdx}, 'img', this.value)" style="width: 100%;"></div>
+        
+        <div style="display: flex; align-items: flex-end;">
+            <button class="delete-btn" onclick="deleteUnit(${rIdx}, ${uIdx})" style="width: 100%; height: 38px;">🗑️</button>
+        </div>
+    </div>
+`).join('')}
 
 window.switchTab = (tab) => {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
